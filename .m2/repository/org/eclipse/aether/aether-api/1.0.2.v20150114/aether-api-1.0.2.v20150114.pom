@@ -24,7 +24,7 @@
 
   <name>Aether API</name>
   <description>
-    The application programming interface for the repository system.
+    The com.windfire.application programming interface for the repository system.
   </description>
 
   <properties>

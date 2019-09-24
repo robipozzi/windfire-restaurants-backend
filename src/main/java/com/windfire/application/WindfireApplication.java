@@ -1,14 +1,14 @@
-package application;
+package com.windfire.application;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
-@ComponentScan(basePackages = {"application", "com.ibm.javametrics.spring"})
-public class SBApplication {
+@ComponentScan(basePackages = {"com.windfire.service", "com.windfire.application", "com.ibm.javametrics.spring"})
+public class WindfireApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(SBApplication.class, args);
+        SpringApplication.run(WindfireApplication.class, args);
     }
 }

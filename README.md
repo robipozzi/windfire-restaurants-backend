@@ -29,15 +29,15 @@ The ports are set to the defaults of 8080 for http and 8443 for https and are ex
 
 ### Run
 
-To build and run the application:
+To build and run the com.windfire.application:
 1. `mvn install`
 2. `java -jar ./target/[microclimate-project-name]-1.0-SNAPSHOT.jar`
 
-To run the application in Docker use the Docker file called `Dockerfile`. If you do not want to install Maven locally you can use `Dockerfile-tools` to build a container with Maven installed.
+To run the com.windfire.application in Docker use the Docker file called `Dockerfile`. If you do not want to install Maven locally you can use `Dockerfile-tools` to build a container with Maven installed.
 
 ### Endpoints
 
-The application exposes the following endpoints:
+The com.windfire.application exposes the following endpoints:
 
 The ports are set in the pom.xml file and exposed to the CLI in the cli-config.yml file.
 

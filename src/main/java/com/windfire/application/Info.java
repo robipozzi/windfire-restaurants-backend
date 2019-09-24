@@ -1,4 +1,4 @@
-package application;
+package com.windfire.application;
 
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
