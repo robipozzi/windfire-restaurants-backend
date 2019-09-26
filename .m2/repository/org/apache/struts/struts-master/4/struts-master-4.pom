@@ -38,7 +38,7 @@
    </scm>
    
    <description>
-    The goal of the Apache Struts project is to encourage com.windfire.application 
+    The goal of the Apache Struts project is to encourage com.rp.windfire.application 
     architectures based on the "Model 2" approach, a variation of the classic 
     Model-View-Controller (MVC) design paradigm. Under Model 2, a servlet (or 
     equivalent) manages business logic execution, and presentation logic 

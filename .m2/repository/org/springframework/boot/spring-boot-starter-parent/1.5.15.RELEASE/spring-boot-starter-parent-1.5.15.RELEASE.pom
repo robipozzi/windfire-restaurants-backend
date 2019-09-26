@@ -40,23 +40,23 @@
 		</dependencies>
 	</dependencyManagement>
 	<build>
-		<!-- Turn on filtering by default for com.windfire.application properties -->
+		<!-- Turn on filtering by default for com.rp.windfire.application properties -->
 		<resources>
 			<resource>
 				<directory>${basedir}/src/main/resources</directory>
 				<filtering>true</filtering>
 				<includes>
-					<include>**/com.windfire.application*.yml</include>
-					<include>**/com.windfire.application*.yaml</include>
-					<include>**/com.windfire.application*.properties</include>
+					<include>**/com.rp.windfire.application*.yml</include>
+					<include>**/com.rp.windfire.application*.yaml</include>
+					<include>**/com.rp.windfire.application*.properties</include>
 				</includes>
 			</resource>
 			<resource>
 				<directory>${basedir}/src/main/resources</directory>
 				<excludes>
-					<exclude>**/com.windfire.application*.yml</exclude>
-					<exclude>**/com.windfire.application*.yaml</exclude>
-					<exclude>**/com.windfire.application*.properties</exclude>
+					<exclude>**/com.rp.windfire.application*.yml</exclude>
+					<exclude>**/com.rp.windfire.application*.yaml</exclude>
+					<exclude>**/com.rp.windfire.application*.properties</exclude>
 				</excludes>
 			</resource>
 		</resources>
