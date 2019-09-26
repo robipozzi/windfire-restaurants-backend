@@ -9,9 +9,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
-//@ComponentScan(basePackages = {"com.rp.windfire.service", "com.rp.windfire.application", "com.ibm.javametrics.spring"})
+@ComponentScan(basePackages = {"com.rp.windfire.service", "com.rp.windfire.application", "com.rp.windfire.config", "com.ibm.javametrics.spring"})
 public class WindfireApplication {
 	private static final Logger logger = LoggerFactory.getLogger(WindfireApplication.class);
 
