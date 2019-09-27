@@ -18,8 +18,10 @@ public class Info {
     public void contextRefreshedEvent() {
 		String port = environment.getProperty("server.port");
 		String context = environment.getProperty("server.context-path");
+		String env = environment.getProperty("environment");
 		logger.info("Port from environment = " + port);
 		logger.info("Context from environment = " + context);
+		logger.info("Environment from environment = " + env);
 		logger.info("The following endpoints are available by default :");
 		logger.info("  Health  : http://localhost:" + port + context + "/health");
 		logger.info("  Check   : http://localhost:" + port + context + "/v1/check");

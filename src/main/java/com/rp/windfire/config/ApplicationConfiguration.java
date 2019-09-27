@@ -10,7 +10,7 @@ class ApplicationConfiguration implements IApplicationConfiguration {
 	private static final Logger logger = LoggerFactory.getLogger(ApplicationConfiguration.class);
 	@Value("${spring.application.name}")
 	private String applicationName;
-	@Value("${conf.environment}")
+	@Value("${environment}")
 	private String environment;
 	
 	public String check() {
