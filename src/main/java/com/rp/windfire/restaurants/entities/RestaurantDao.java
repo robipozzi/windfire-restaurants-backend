@@ -9,6 +9,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class RestaurantDao {
 	private static final Logger logger = LoggerFactory.getLogger(RestaurantDao.class);
+	/*
+	 * @Autowired private IRestaurantRepository restaurantDao;
+	 */
 	
 	public Iterable<Restaurant> findAll() {
 		logger.info("Executing RestaurantDao.findAll()");
