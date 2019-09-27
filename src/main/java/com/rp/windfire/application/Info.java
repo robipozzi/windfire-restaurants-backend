@@ -24,7 +24,7 @@ public class Info {
 		logger.info("Environment from environment = " + env);
 		logger.info("The following endpoints are available by default :");
 		logger.info("  Health  : http://localhost:" + port + context + "/health");
-		logger.info("  Check   : http://localhost:" + port + context + "/v1/check");
+		logger.info("  Check   : http://localhost:" + port + context + "/check");
     }
 
 }
