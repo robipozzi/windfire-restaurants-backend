@@ -1,4 +1,4 @@
-package com.rp.windfire.service;
+package com.rp.windfire.health.service;
 
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
