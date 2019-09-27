@@ -11,17 +11,19 @@ public class RestaurantDao extends ADao<Restaurant>{
 	 * @Autowired private IRestaurantRepository restaurantDao;
 	 */
 	
+	@Override
 	public Iterable<Restaurant> findAll() {
-		logger.info("Executing RestaurantDao.findAll()");
+		logger.info("Executing RestaurantDao.findAll()"); 
 		Iterable<Restaurant> restaurants = __findAll_fake();
 		return restaurants;
 	}
 	
+	@Override
 	public Restaurant save(Restaurant restaurant) {
 		logger.info("Executing RestaurantDao.save(restaurant)");
 		return null;
 	}
-	
+
 	private Iterable<Restaurant> __findAll_fake() {
 		logger.info("Executing RestaurantDao.__findAll_fake()");
 		List<Restaurant> restaurants = new ArrayList<>();
