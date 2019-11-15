@@ -31,10 +31,24 @@ public class RestaurantDao extends ADao<Restaurant>{
 		Restaurant restaurant1 = new Restaurant();
 		restaurant1.setId(1);
 		restaurant1.setName("Il Vecchio Tram");
+		restaurant1.setPhone("0321778914");
+		restaurant1.setMobile("3489008762");
+		restaurant1.setEmail("ilvecchiotram@gmail.com");
+		restaurant1.setWebsite("www.ilvecchiotram.it");
+		restaurant1.setCap("21312");
+		restaurant1.setCity("Arona");
+		restaurant1.setAddress("Piazza del Popolo 12");
 		// Create Restaurant 2
 		Restaurant restaurant2 = new Restaurant();
 		restaurant2.setId(2);
 		restaurant2.setName("Battipalo");
+		restaurant2.setPhone("0321713829");
+		restaurant2.setMobile("3457708391");
+		restaurant2.setEmail("battipalo@gmail.com");
+		restaurant2.setWebsite("www.battipalo.com");
+		restaurant2.setCap("21429");
+		restaurant2.setCity("Lesa");
+		restaurant2.setAddress("Lungolago Marconi 27");
 		// Create Restaurant List
 		restaurants.add(restaurant1);
 		restaurants.add(restaurant2);
