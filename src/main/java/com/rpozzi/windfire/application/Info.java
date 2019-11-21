@@ -1,4 +1,4 @@
-package com.rp.windfire.application;
+package com.rpozzi.windfire.application;
 
 import org.springframework.context.event.EventListener;
 import org.springframework.core.env.Environment;

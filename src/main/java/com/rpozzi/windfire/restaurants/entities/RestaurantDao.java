@@ -1,9 +1,10 @@
-package com.rp.windfire.restaurants.entities;
+package com.rpozzi.windfire.restaurants.entities;
 
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Component;
-import com.rp.windfire.common.dao.ADao;
+
+import com.rpozzi.windfire.common.dao.ADao;
 
 @Component
 public class RestaurantDao extends ADao<Restaurant>{

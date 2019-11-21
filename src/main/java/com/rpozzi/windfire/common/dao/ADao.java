@@ -1,4 +1,4 @@
-package com.rp.windfire.common.dao;
+package com.rpozzi.windfire.common.dao;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

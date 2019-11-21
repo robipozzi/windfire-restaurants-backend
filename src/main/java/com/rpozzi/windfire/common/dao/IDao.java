@@ -1,4 +1,4 @@
-package com.rp.windfire.common.dao;
+package com.rpozzi.windfire.common.dao;
 
 public interface IDao<T> {
 	public Iterable<T> findAll();

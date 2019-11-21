@@ -1,9 +1,10 @@
-package com.rp.windfire.common.service;
+package com.rpozzi.windfire.common.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.rp.windfire.common.dao.IDao;
-import com.rp.windfire.config.IApplicationConfiguration;
+
+import com.rpozzi.windfire.common.dao.IDao;
+import com.rpozzi.windfire.config.IApplicationConfiguration;
 
 public abstract class ABusinessService<T> implements IBusinessService<T> {
 	protected static final Logger logger = LoggerFactory.getLogger(ABusinessService.class);

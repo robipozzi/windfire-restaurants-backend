@@ -1,4 +1,4 @@
-package com.rp.windfire.restaurants.entities;
+package com.rpozzi.windfire.restaurants.entities;
 
 //@Entity(name = "restaurants")
 public class Restaurant {

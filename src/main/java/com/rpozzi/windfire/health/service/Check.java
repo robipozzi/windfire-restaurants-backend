@@ -1,4 +1,4 @@
-package com.rp.windfire.health.service;
+package com.rpozzi.windfire.health.service;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -7,7 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import com.rp.windfire.config.IApplicationConfiguration;
+
+import com.rpozzi.windfire.config.IApplicationConfiguration;
 
 @RestController
 public class Check {

@@ -1,4 +1,4 @@
-package com.rp.windfire.application;
+package com.rpozzi.windfire.application;
 
 import java.util.Arrays;
 
@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
-@ComponentScan(basePackages = {"com.rp.windfire", "com.ibm.javametrics.spring"})
+@ComponentScan(basePackages = {"com.rpozzi.windfire", "com.ibm.javametrics.spring"})
 public class WindfireApplication {
 	private static final Logger logger = LoggerFactory.getLogger(WindfireApplication.class);
 

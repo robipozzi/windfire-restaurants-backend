@@ -1,4 +1,4 @@
-package com.rp.windfire.config;
+package com.rpozzi.windfire.config;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

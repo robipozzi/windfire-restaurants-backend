@@ -1,4 +1,4 @@
-package com.rp.windfire.config;
+package com.rpozzi.windfire.config;
 
 public interface IApplicationConfiguration {
 	public String check();

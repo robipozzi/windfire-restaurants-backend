@@ -1,14 +1,15 @@
-package com.rp.windfire.restaurants.service;
+package com.rpozzi.windfire.restaurants.service;
 
 import java.util.Iterator;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
-import com.rp.windfire.common.dao.IDao;
-import com.rp.windfire.common.service.ABusinessService;
-import com.rp.windfire.config.IApplicationConfiguration;
-import com.rp.windfire.restaurants.entities.Restaurant;
+
+import com.rpozzi.windfire.common.dao.IDao;
+import com.rpozzi.windfire.common.service.ABusinessService;
+import com.rpozzi.windfire.config.IApplicationConfiguration;
+import com.rpozzi.windfire.restaurants.entities.Restaurant;
 
 @RestController
 public class RestaurantService extends ABusinessService<Restaurant>{

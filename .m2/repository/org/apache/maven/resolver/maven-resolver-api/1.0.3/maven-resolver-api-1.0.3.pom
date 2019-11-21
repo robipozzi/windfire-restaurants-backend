@@ -32,7 +32,7 @@
 
   <name>Maven Artifact Resolver API</name>
   <description>
-    The com.rp.windfire.application programming interface for the repository system.
+    The com.rpozzi.windfire.application programming interface for the repository system.
   </description>
 
   <dependencies>
