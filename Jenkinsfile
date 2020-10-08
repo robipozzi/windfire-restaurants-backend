@@ -13,7 +13,8 @@ pipeline {
     environment {
         APP_NAME = "windfire-restaurants-backend"
         DEV_PROJECT = "windfire"
-        STAGE_PROJECT = "youruser-movies-stage"
+        STAGE_PROJECT = "windfire-stage"
+        PROD_PROJECT = "windfire-prod"
         APP_GIT_URL = "https://github.com/robipozzi/windfire-restaurants-backend"
     }
 
