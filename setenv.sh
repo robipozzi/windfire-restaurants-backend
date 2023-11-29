@@ -9,11 +9,45 @@ end=$'\e[0m'
 coffee=$'\xE2\x98\x95'
 coffee3="${coffee} ${coffee} ${coffee}"
 ##### Terminal Colors - END
+
 ###### Variable section - START
-ANGULAR_DIST_DIR=dist/
+CURRENT_DIRECTORY=
+PROFILE_OPTION=$1
+TRUSTSTORE=$2
+TRUSTSTORE_PWD=
 CONTAINER_IMAGE_NAME=windfire-restaurants-backend
 CONTAINER_IMAGE_VERSION=1.0
 CONTAINER_NAME=windfire-restaurants-backend
 DOCKER_HUB_ID=robipozzi
-OPENSHIFT_IMAGE_REGISTRY=default-route-openshift-image-registry.robipozzi-rhocp-588309-3c76f4d12b7fe02f9cab56e64bec3e29-0000.eu-de.containers.appdomain.cloud
 ###### Variable section - END
+
+##### Function section - START
+printProfile()
+{
+	echo ${grn}Select run platform : ${end}
+    echo "${grn}1. Localhost${end}"
+    echo "${grn}2. Localhost (SSL enabled)${end}"
+	read PROFILE_OPTION
+	setProfile
+}
+
+setProfile()
+{
+	case $PROFILE_OPTION in
+		1)  printf "\n${grn}Application is running on localhost, going with default profile ...${end}\n" 
+			;;
+		2)  printf "\n${grn}Application is running on localhost with SSL enabled, going with ssl profile ...${end}\n" 
+			;;
+		*) 	printf "\n${red}No valid option selected${end}\n"
+			printProfile
+			;;
+	esac
+}
+
+inputTruststorePassword()
+{
+    ###### Set truststore password
+    echo ${grn}Enter truststore password : ${end}
+    read -s TRUSTSTORE_PWD
+}
+##### Function section - END

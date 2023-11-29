@@ -1,7 +1,6 @@
-FROM ibmjava:8-sfj
-LABEL maintainer="IBM Java Engineering at IBM Cloud"
-
-COPY target/windfire-restaurants-backend-1.0-SNAPSHOT.jar /app.jar
-
-ENV JAVA_OPTS=""
-ENTRYPOINT [ "sh", "-c", "java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar /app.jar" ]
+FROM openjdk:17
+LABEL maintainer="Roberto Pozzi <r.robipozzi@gmail.com>"
+LABEL version="1.0"
+LABEL description="Spring Boot Windfire restaurants backend"
+COPY target/windfire-restaurants-backend-0.0.1-SNAPSHOT.jar app.jar
+ENTRYPOINT ["java", "-jar", "/app.jar"]
