@@ -1,9 +1,7 @@
 package com.rpozzi.windfire.restaurants.entities;
-/*
- * package com.rpozzi.windfire.restaurants.entities;
- * 
- * public interface IRestaurantRepository extends CrudRepository<Restaurant,
- * Long> {
- * 
- * }
- */
+
+import org.springframework.data.mongodb.repository.MongoRepository;
+
+public interface IRestaurantRepository extends MongoRepository<Restaurant, String> {
+	
+}

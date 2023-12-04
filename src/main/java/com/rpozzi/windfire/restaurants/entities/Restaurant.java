@@ -1,32 +1,28 @@
 package com.rpozzi.windfire.restaurants.entities;
 
-//@Entity(name = "restaurants")
-public class Restaurant {
-	//@Id
-	//@GeneratedValue(strategy = GenerationType.AUTO)
-	private Integer id;
-	//@Column(name = "NAME")
-	private String name;
-	//@Column(name = "PHONE")
-	private String phone;
-	//@Column(name = "MOBILE")
-	private String mobile;
-	//@Column(name = "EMAIL")
-	private String email;
-	//@Column(name = "WEBSITE")
-	private String website;
-	//@Column(name = "CAP")
-	private String cap;
-	//@Column(name = "CITY")
-	private String city;
-	//@Column(name = "ADDRESS")
-	private String address;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-	public Integer getId() {
+/**
+ * An entity to represent a restaurants.
+ */
+@Document("restaurants")
+public class Restaurant {
+	@Id
+	private String id;
+	private String name;
+	private Address address;
+	private String cuisine;
+	private String phone;
+	private String mobile;
+	private String email;
+	private String website;
+
+	public String getId() {
 		return id;
 	}
 
-	public void setId(Integer id) {
+	public void setId(String id) {
 		this.id = id;
 	}
 
@@ -38,6 +34,22 @@ public class Restaurant {
 		this.name = name;
 	}
 
+	public Address getAddress() {
+		return address;
+	}
+
+	public void setAddress(Address address) {
+		this.address = address;
+	}
+
+	public String getCuisine() {
+		return cuisine;
+	}
+
+	public void setCuisine(String cuisine) {
+		this.cuisine = cuisine;
+	}
+
 	public String getPhone() {
 		return phone;
 	}
@@ -45,7 +57,7 @@ public class Restaurant {
 	public void setPhone(String phone) {
 		this.phone = phone;
 	}
-	
+
 	public String getMobile() {
 		return mobile;
 	}
@@ -69,29 +81,4 @@ public class Restaurant {
 	public void setWebsite(String website) {
 		this.website = website;
 	}
-
-	public String getCap() {
-		return cap;
-	}
-
-	public void setCap(String cap) {
-		this.cap = cap;
-	}
-
-	public String getCity() {
-		return city;
-	}
-
-	public void setCity(String city) {
-		this.city = city;
-	}
-
-	public String getAddress() {
-		return address;
-	}
-
-	public void setAddress(String address) {
-		this.address = address;
-	}
-
 }
