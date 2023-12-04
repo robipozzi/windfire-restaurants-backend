@@ -2,7 +2,7 @@ source ./setenv.sh $1 $2
 
 ##### Variable section - START
 SCRIPT=run-windfire-restaurants-backend.sh
-DEFAULT_TRUSTSTORE=$HOME/opt/robipozzi-kafka/ssl/kafka.client.truststore.jks
+DEFAULT_TRUSTSTORE=$HOME/opt/windfire-restaurants/ssl/windfire.truststore.jks
 JAR_NAME=windfire-restaurants-backend
 VERSION=0.0.1-SNAPSHOT
 ##### Variable section - END
@@ -24,10 +24,14 @@ main()
 	# --spring.config.location=file://<path to application config file>																			#
 	#############################################################################################################################################
 	case $PROFILE_OPTION in
-		1)  java -jar target/$JAR_NAME-$VERSION.jar
+		1)  inputMongoDbPassword
+			export MONGODB_PASSWORD=$MONGODB_PWD
+			java -jar target/$JAR_NAME-$VERSION.jar
 			;;
-		2)	inputTruststore
+		2)	inputMongoDbPassword
+			inputTruststore
 			inputTruststorePassword
+			export MONGODB_PASSWORD=$MONGODB_PWD
 			export TRUSTSTORE_LOCATION=$TRUSTSTORE
 			export TRUSTSTORE_PASSWORD=$TRUSTSTORE_PWD
 			java -jar target/$JAR_NAME-$VERSION.jar --spring.profiles.active=ssl

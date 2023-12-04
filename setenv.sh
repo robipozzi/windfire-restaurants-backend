@@ -13,6 +13,7 @@ coffee3="${coffee} ${coffee} ${coffee}"
 ###### Variable section - START
 CURRENT_DIRECTORY=
 PROFILE_OPTION=$1
+MONGODB_PWD=
 TRUSTSTORE=$2
 TRUSTSTORE_PWD=
 CONTAINER_IMAGE_NAME=windfire-restaurants-backend
@@ -42,6 +43,13 @@ setProfile()
 			printProfile
 			;;
 	esac
+}
+
+inputMongoDbPassword()
+{
+    ###### Set MongoDb password
+    echo ${grn}Enter MongoDb password : ${end}
+    read -s MONGODB_PWD
 }
 
 inputTruststorePassword()
