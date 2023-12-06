@@ -17,6 +17,22 @@ public class Restaurant {
 	private String mobile;
 	private String email;
 	private String website;
+	
+	
+	public Restaurant() {
+		super();
+	}
+	
+	public Restaurant(String name, Address address, String cuisine, String phone, String mobile, String email, String website) {
+		super();
+		this.name = name;
+		this.address = address;
+		this.cuisine = cuisine;
+		this.phone = phone;
+		this.mobile = mobile;
+		this.email = email;
+		this.website = website;
+	}
 
 	public String getId() {
 		return id;
