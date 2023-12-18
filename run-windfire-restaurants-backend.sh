@@ -10,9 +10,6 @@ VERSION=0.0.1-SNAPSHOT
 main()
 {
 	CURRENT_DIRECTORY=$(pwd)
-	if [ -z $PROFILE_OPTION ]; then 
-        printProfile
-    fi
 	java -version
 	java -jar target/$JAR_NAME-$VERSION.jar
 	

@@ -18,4 +18,4 @@ This repository holds the code for Windfire Restaurants application backend serv
 
 To build and run the com.rpozzi.windfire.application:
 1. `mvn install`
-2. `java -jar ./target/[microclimate-project-name]-1.0-SNAPSHOT.jar`
+2. `java -jar target/windfire-restaurants-backend-0.0.1-SNAPSHOT.jar`
