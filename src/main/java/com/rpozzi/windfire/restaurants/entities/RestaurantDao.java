@@ -5,11 +5,10 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import com.rpozzi.windfire.restaurants.service.RestaurantRESTService;
 
 @Component
 public class RestaurantDao {
-	private static final Logger logger = LoggerFactory.getLogger(RestaurantRESTService.class);
+	private static final Logger logger = LoggerFactory.getLogger(RestaurantDao.class);
 
 	public Iterable<Restaurant> findAll() {
 		logger.debug("Executing " + this.getClass().getName() + ".findAll()");
