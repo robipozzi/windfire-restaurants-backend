@@ -12,4 +12,8 @@ coffee3="${coffee} ${coffee} ${coffee}"
 
 ###### Variable section - START
 CURRENT_DIRECTORY=
+KEYCLOAK_SERVER_ADDRESS=localhost
+KEYCLOAK_SERVER_PORT=8080
+APPLICATION_SERVER_ADDRESS=localhost
+APPLICATION_SERVER_PORT=8081
 ###### Variable section - END

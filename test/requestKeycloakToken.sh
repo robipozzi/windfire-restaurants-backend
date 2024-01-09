@@ -21,7 +21,7 @@ main()
 	inputRealmPassword
 	inputGrantType
 	
-	curl -X POST http://localhost:8081/realms/$REALM_ID/protocol/openid-connect/token \
+	curl -X POST http://$KEYCLOAK_SERVER_ADDRESS:$KEYCLOAK_SERVER_PORT/realms/$REALM_ID/protocol/openid-connect/token \
 		-H "Accept: application/json" \
 		-H "Content-Type: application/x-www-form-urlencoded" \
 		-H "cache-control: no-cache" \

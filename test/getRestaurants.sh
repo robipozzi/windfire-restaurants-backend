@@ -19,7 +19,7 @@ getRestaurants()
 {
 	echo ${grn}Running curl command to get Restaurants with HTTP GET method - No Authentication ...${end}
 	
-	curl -X GET http://localhost:8080/restaurants \
+	curl -X GET http://$APPLICATION_SERVER_ADDRESS:$APPLICATION_SERVER_PORT/restaurants \
 		-H "Accept: application/json" \
 		-H "Content-Type: application/json" \
 		-H "cache-control: no-cache"
@@ -29,7 +29,7 @@ getRestaurantsWithToken()
 {
 	echo ${grn}Running curl command to get Restaurants with HTTP GET method - Authentication Token required ...${end}
 	inputAuthenticationToken
-	curl -X GET http://localhost:8080/restaurants \
+	curl -X GET http://$APPLICATION_SERVER_ADDRESS:$APPLICATION_SERVER_PORT/restaurants \
 		-H "Accept: application/json" \
 		-H "Content-Type: application/json" \
 		-H "cache-control: no-cache" \
