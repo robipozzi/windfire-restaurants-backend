@@ -7,6 +7,7 @@
 - [How the application works](#how-the-application-works)
     - [Implementing OAuth2 Authentication with Keycloak](#implementing-oauth2-authentication-with-keycloak)
     - [SSL configuration](#ssl-configuration)
+    - [Test the application](#test-the-application)
 
 ## Introduction
 This repository holds the code for Windfire Restaurants application backend services. It also provides scripts to facilitate
@@ -207,3 +208,6 @@ server.ssl.key-store-password=${KEYSTORE_PASSWORD}
 # The alias mapped to the certificate
 server.ssl.key-alias=windfire_restaurants_srvc
 ```
+
+### Test the application
+[TODO]
