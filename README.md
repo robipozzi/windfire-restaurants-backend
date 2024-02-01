@@ -1,12 +1,14 @@
 # Windfire Restaurants application backend
 
-### Table of Contents
+## Table of Contents
 - [Introduction](#introduction)
 - [Requirements](#requirements)
 - [Run](#run)
-- [Run](#run)
-    
-### Introduction
+- [How the application works](#how-the-application-works)
+    - [Implementing OAuth2 Authentication with Keycloak](#implementing-oauth2-authentication-with-keycloak)
+    - [SSL configuration](#ssl-configuration)
+
+## Introduction
 This repository holds the code for Windfire Restaurants application backend services. It also provides scripts to facilitate
 the build and run of the application.
 
@@ -15,25 +17,27 @@ Windfire Restaurants Backend implements and expose a REST service and is based a
 This version implements OAuth2 authorization (using Keycloak as the Authorization Server) and uses SSL certificate to encrypt
 the traffic.
 
+The architecture of the application is depicted in the following picture.
 
-### Requirements
+![](img/oauth-with-Keycloak-No-SSL.png)
+
+## Requirements
 To build and run the application, following minimal software needs to be available on the machine:
 
 * [Maven](https://maven.apache.org/install.html)
 * Java 17: Any compliant JVM should work.
 
-
-### Run
+## Run
 Once requirements
 To build and run the application one can :
 1. `mvn install`
 2. `java -jar target/windfire-restaurants-backend-0.0.1-SNAPSHOT.jar`
 
-A convenient script **build.sh** is provided to build the application from source code.
+A convenient script **[build.sh](build.sh)** is provided to build the application from source code.
 
-Another script **run-windfire-restaurants-backend.sh** is provided to run the application, once it has been built.
+Another script **[run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh)** is provided to run the application, once it has been built.
 
-### How the application works
+## How the application works
 The application implements a REST service, using Spring Boot construct, i.e. simply tagging a class as **@RestController**, as 
 it can be seen in **RestaurantRESTService** here following
 
@@ -134,10 +138,72 @@ public class WindfireApplication {
 }
 ```
 
-- **OAuth2 specific dependencies**: t
+### Implementing OAuth2 Authentication with Keycloak
+Keycloak is an Open Source Identity and Access Management technology that allows to add authentication mechanisms to applications, securing them with minimum effort.
 
-#### OAuth2 configuration
-[TODO]
+Keycloak provides user federation, strong authentication, user management, fine-grained authorization, and more.
 
-#### SSL configuration
-[TODO]
+To setup, configure and run a Keycloak server as an OAuth2 Authorization Server refer to the following article *[Building robust APIs: a comprehensive guide to OAuth2 and SSL integration in REST services — Part 2](https://medium.com/@robertopozzi/building-robust-apis-a-comprehensive-guide-to-oauth2-and-ssl-integration-in-rest-services-part-2-44213d2e3e62)*.
+
+Once Keycloak is up and running, **spring.security.oauth2.resourceserver.jwt.issuer-uri** property needs to be set appropriately in **[application.properties](src/main/resources/application.properties)**, as follows:
+
+```
+### Security configuration
+spring.security.oauth2.resourceserver.jwt.issuer-uri=http://localhost:8080/realms/windfire-restaurants
+```
+
+This is really all is needed when using Spring Boot, everything is automatically wired up and the REST service is now protected under OAuth2 authentication; 
+
+Let's do a small step forward and implement a simple error handling, returning a specific messages to a REST client, in case the client is not authenticated. To implement such behavior, a custom *AuthenticationEntryPoint* (it is an interface provided by Spring Security framework) needs to be implemented. The following code (implemented in  **[CustomAuthenticationEntryPoint](src/main/java/com/rpozzi/windfire/security/CustomAuthenticationEntryPoint.java)**) is quite straightforward, it just returns a JSON formatted response with an appropriate error message.
+
+```
+@Component
+public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint {
+
+	private final ObjectMapper objectMapper;
+
+    public CustomAuthenticationEntryPoint(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
+    @Override
+    public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
+        String errorType = "unauthorized";
+        String errorMessage = "";
+    	response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+
+        if (authException.getClass().getSimpleName().equals("InsufficientAuthenticationException")) {
+			errorMessage = "No Bearer token provided";
+		} else if (authException.getClass().getSimpleName().equals("InvalidBearerTokenException")) {
+			errorMessage = "Invalid Bearer token provided";
+		}
+        
+        Map<String, String> errorResponse = new HashMap<>();
+        errorResponse.put("error", errorType);
+        errorResponse.put("message", errorMessage);
+
+        objectMapper.writeValue(response.getWriter(), errorResponse);
+    }
+
+}
+```
+
+### SSL configuration
+Enabling SSL on a Spring Boot REST service with a certificate signed by a Certificate Authority (CA) involves a few steps, refer to the following article *[Building robust APIs: a comprehensive guide to OAuth2 and SSL integration in REST services - Part 3](https://medium.com/@robertopozzi/building-robust-apis-a-comprehensive-guide-to-oauth2-and-ssl-integration-in-rest-services-part-2-44213d2e3e62)* for step by step instructions.
+
+A convenient script **[setupSSL.sh](ssl/setupSSL.sh)** is provided to generate the SSL certificate and keystore needed to encrypt the traffic.
+
+Appropriate configuration parameters for SSL need to set in **[application.properties](src/main/resources/application.properties)**, as follows:
+
+```
+### SSL configuration
+# The format used for the keystore. It could be set either to PKCS12 or JKS
+server.ssl.key-store-type=JKS
+# The path to the keystore containing the certificate
+server.ssl.key-store=classpath:keystore/windfire_restaurants_srvc.keystore.jks
+# The password used to generate the certificate
+server.ssl.key-store-password=${KEYSTORE_PASSWORD}
+# The alias mapped to the certificate
+server.ssl.key-alias=windfire_restaurants_srvc
+```
