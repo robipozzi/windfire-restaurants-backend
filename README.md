@@ -13,14 +13,14 @@
 This repository holds the code for Windfire Restaurants application backend services. It also provides scripts to facilitate
 the build and run of the application.
 
-Windfire Restaurants Backend implements and expose a REST service and is based and developed with Spring Boot.
+Windfire Restaurants Backend implements and expose a REST service and is based and developed on Spring Boot.
 
 This version implements OAuth2 authorization (using Keycloak as the Authorization Server) and uses SSL certificate to encrypt
 the traffic.
 
 The architecture of the application is depicted in the following picture.
 
-![](img/oauth-with-Keycloak-No-SSL.png)
+![](img/oauth-with-Keycloak-SSL.png)
 
 ## Requirements
 To build and run the application, following minimal software needs to be available on the machine:
@@ -29,8 +29,7 @@ To build and run the application, following minimal software needs to be availab
 * Java 17: Any compliant JVM should work.
 
 ## Run
-Once requirements
-To build and run the application one can :
+Once requirements are met, one can build and run the application with the following:
 1. `mvn install`
 2. `java -jar target/windfire-restaurants-backend-0.0.1-SNAPSHOT.jar`
 
@@ -210,4 +209,6 @@ server.ssl.key-alias=windfire_restaurants_srvc
 ```
 
 ### Test the application
-[TODO]
+Two scripts are provided to test the application
+- **[requestKeycloakToken.sh](test/requestKeycloakToken.sh)** script allows to authenticate to Keycloak and get an Authorization Bearer token that can then be used to access the REST service.
+- **[getRestaurants.sh](test/getRestaurants.sh)** script allows to call the REST service passing the Authorization Bearer token returned by Keycloak to ensure the client is authenticated.
