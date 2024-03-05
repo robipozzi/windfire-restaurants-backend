@@ -15,6 +15,34 @@ main()
 	$RUN_TEST_FUNCTION
 }
 
+selectTest()
+{
+	echo ${grn}Select test to run : ${end}
+    echo "${grn}1. Get Restaurants (No TLS, No authentication) ${end}"
+	echo "${grn}2. Get Restaurants (No TLS, using an authentication token) ${end}"
+	echo "${grn}3. Get Restaurants (With TLS, using an authentication token) ${end}"
+	echo "${grn}4. Just for test (With TLS, using an authentication token) ${end}"
+	read TEST_CHOICE
+	setTest
+}
+
+setTest()
+{
+	case $TEST_CHOICE in
+		1)  RUN_TEST_FUNCTION="getRestaurants"
+			;;
+        2)  RUN_TEST_FUNCTION="getRestaurantsWithToken"
+			;;
+		3)  RUN_TEST_FUNCTION="getRestaurantsWithTokenAndTLS"
+			;;
+		4)  RUN_TEST_FUNCTION="__getRestaurantsWithTokenAndTLS"
+			;;
+		*) 	printf "\n${red}No valid option selected${end}\n"
+			selectTest
+			;;
+	esac
+}
+
 getRestaurants()
 {
 	echo ${grn}Running curl command to get Restaurants with HTTP GET method - No Authentication ...${end}
@@ -36,7 +64,7 @@ getRestaurantsWithToken()
 		-H "Authorization: Bearer $AUTHENTICATION_TOKEN"
 }
 
-getRestaurantsWithTokenAndSSL()
+getRestaurantsWithTokenAndTLS()
 {
 	echo ${grn}Running curl command to get Restaurants with HTTPS GET method - Authentication Token required ...${end}
 	inputAuthenticationToken
@@ -48,7 +76,7 @@ getRestaurantsWithTokenAndSSL()
 		-H "Authorization: Bearer $AUTHENTICATION_TOKEN"
 }
 
-__getRestaurantsWithTokenAndSSL()
+__getRestaurantsWithTokenAndTLS()
 {
 	echo ${grn}Running curl command to get Restaurants with HTTPS GET method - Authentication Token required ...${end}
 	inputAuthenticationToken
@@ -59,34 +87,6 @@ __getRestaurantsWithTokenAndSSL()
 		-H "Content-Type: application/json" \
 		-H "cache-control: no-cache" \
 		-H "Authorization: Bearer $AUTHENTICATION_TOKEN"
-}
-
-selectTest()
-{
-	echo ${grn}Select test to run : ${end}
-    echo "${grn}1. Get Restaurants (No SSL, No authentication) ${end}"
-	echo "${grn}2. Get Restaurants (No SSL, using an authentication token) ${end}"
-	echo "${grn}3. Get Restaurants (With SSL, using an authentication token) ${end}"
-	echo "${grn}4. Just for test (With SSL, using an authentication token) ${end}"
-	read TEST_CHOICE
-	setTest
-}
-
-setTest()
-{
-	case $TEST_CHOICE in
-		1)  RUN_TEST_FUNCTION="getRestaurants"
-			;;
-        2)  RUN_TEST_FUNCTION="getRestaurantsWithToken"
-			;;
-		3)  RUN_TEST_FUNCTION="getRestaurantsWithTokenAndSSL"
-			;;
-		4)  RUN_TEST_FUNCTION="__getRestaurantsWithTokenAndSSL"
-			;;
-		*) 	printf "\n${red}No valid option selected${end}\n"
-			selectTest
-			;;
-	esac
 }
 
 inputAuthenticationToken()

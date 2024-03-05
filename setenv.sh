@@ -14,11 +14,12 @@ coffee3="${coffee} ${coffee} ${coffee}"
 CURRENT_DIRECTORY=
 KEYCLOAK_SERVER_ADDRESS=localhost
 KEYCLOAK_SERVER_PORT=8080
+KEYCLOAK_TLS_SERVER_PORT=8443
 APPLICATION_SERVER_ADDRESS=localhost
 APPLICATION_SERVER_PORT=8081
-### SSL settings
+### TLS settings
 # Keystore and CSR settings
-DEFAULT_SSL_DIR=$HOME/dev/workspaces/windfire/windfire-restaurants-backend/src/main/resources/keystore
+DEFAULT_TLS_DIR=$HOME/dev/workspaces/windfire/windfire-restaurants-backend/src/main/resources/keystore
 DEFAULT_KEYSTORE=windfire_restaurants_srvc.keystore.jks
 DEFAULT_KEYSTORE_ALIAS=windfire_restaurants_srvc
 DEFAULT_CSR=windfire_restaurants_srvc.csr
