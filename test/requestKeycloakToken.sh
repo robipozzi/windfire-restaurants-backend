@@ -1,6 +1,8 @@
 source ../setenv.sh
 
-##### Variable section - START
+######################################
+###### Variable section - START ######
+######################################
 SCRIPT=testKeycloak.sh
 PLATFORM_OPTION=
 FUNCTION=
@@ -11,9 +13,13 @@ REALM_ID=
 REALM_USERNAME=
 REALM_PASSWORD=
 GRANT_TYPE=
-##### Variable section - END
+####################################
+###### Variable section - END ######
+####################################
 
-##### Function section - START
+######################################
+###### Function section - START ######
+######################################
 main()
 {
 	printChoosePlatform
@@ -51,9 +57,9 @@ setFunction()
 
 curlNoTLS()
 {
-	echo ${blu}Running curl on HTTP endpoint ...${end}
-	echo
-	curl -X POST http://$KEYCLOAK_SERVER_ADDRESS:$KEYCLOAK_SERVER_PORT/realms/$REALM_ID/protocol/openid-connect/token \
+	CURL="curl -X POST http://$KEYCLOAK_SERVER_ADDRESS:$KEYCLOAK_SERVER_PORT/realms/$REALM_ID/protocol/openid-connect/token"
+	echo ${blu}Running $CURL ...${end}
+	$CURL \
 		-H "Accept: application/json" \
 		-H "Content-Type: application/x-www-form-urlencoded" \
 		-H "cache-control: no-cache" \
@@ -62,14 +68,20 @@ curlNoTLS()
 
 curlSelfSignedTLS()
 {
-	echo ${blu}Running curl on HTTPS endpoint, disabling TLS certificate verification${end}
-	echo
-	curl -X POST https://$KEYCLOAK_SERVER_ADDRESS:$KEYCLOAK_TLS_SERVER_PORT/realms/$REALM_ID/protocol/openid-connect/token \
+	CURL="curl -X POST https://$KEYCLOAK_SERVER_ADDRESS:$KEYCLOAK_TLS_SERVER_PORT/realms/$REALM_ID/protocol/openid-connect/token"
+	echo ${blu}Running $CURL ...${end}
+	
+	#####################################################
+	##### it calls Keycloak using the following		#####
+	##### $HOME/opt/keycloak/ssl/ca_keycloak.pem	#####
+	#####################################################
+	
+	$CURL \
+	    --cacert $DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_CACERT_PEM \
 		-H "Accept: application/json" \
 		-H "Content-Type: application/x-www-form-urlencoded" \
 		-H "cache-control: no-cache" \
-		-d "client_id=$REALM_ID&username=$REALM_USERNAME&password=$REALM_PASSWORD&grant_type=$GRANT_TYPE" \
-		-k
+		-d "client_id=$REALM_ID&username=$REALM_USERNAME&password=$REALM_PASSWORD&grant_type=$GRANT_TYPE"
 }
 
 inputRealmId()
@@ -113,7 +125,9 @@ inputGrantType()
 		GRANT_TYPE=$DEFAULT_GRANT_TYPE
     fi
 }
-##### Function section - END
+####################################
+###### Function section - END ######
+####################################
 
 # ##############################################
 # #################### MAIN ####################

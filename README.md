@@ -6,7 +6,7 @@
 - [Run](#run)
 - [How the application works](#how-the-application-works)
     - [Implementing OAuth2 Authentication with Keycloak](#implementing-oauth2-authentication-with-keycloak)
-    - [SSL configuration](#ssl-configuration)
+    - [TLS configuration](#tls-configuration)
     - [Test the application](#test-the-application)
 
 ## Introduction
@@ -15,12 +15,12 @@ the build and run of the application.
 
 Windfire Restaurants Backend implements and expose a REST service and is based and developed on Spring Boot.
 
-This version implements OAuth2 authorization (using Keycloak as the Authorization Server) and uses SSL certificate to encrypt
+This version implements OAuth2 authorization (using Keycloak as the Authorization Server) and uses TLS certificate to encrypt
 the traffic.
 
 The architecture of the application is depicted in the following picture.
 
-![](img/oauth-with-Keycloak-SSL.png)
+![](img/oauth-with-Keycloak-TLS.png)
 
 ## Requirements
 To build and run the application, following minimal software needs to be available on the machine:
@@ -143,13 +143,13 @@ Keycloak is an Open Source Identity and Access Management technology that allows
 
 Keycloak provides user federation, strong authentication, user management, fine-grained authorization, and more.
 
-To setup, configure and run a Keycloak server as an OAuth2 Authorization Server refer to the following article *[Building robust APIs: a comprehensive guide to OAuth2 and SSL integration in REST services — Part 2](https://medium.com/@robertopozzi/building-robust-apis-a-comprehensive-guide-to-oauth2-and-ssl-integration-in-rest-services-part-2-44213d2e3e62)*.
+To setup, configure and run a Keycloak server as an OAuth2 Authorization Server refer to the following article *[Building robust APIs: a comprehensive guide to OAuth2 and TLS integration in REST services — Part 2](https://medium.com/@robertopozzi/building-robust-apis-a-comprehensive-guide-to-oauth2-and-ssl-integration-in-rest-services-part-2-44213d2e3e62)*.
 
 Once Keycloak is up and running, **spring.security.oauth2.resourceserver.jwt.issuer-uri** property needs to be set appropriately in **[application.properties](src/main/resources/application.properties)**, as follows:
 
 ```
 ### Security configuration
-spring.security.oauth2.resourceserver.jwt.issuer-uri=http://localhost:8080/realms/windfire-restaurants
+spring.security.oauth2.resourceserver.jwt.issuer-uri=https://localhost:8443/realms/windfire-restaurants
 ```
 
 This is really all is needed when using Spring Boot, everything is automatically wired up and the REST service is now protected under OAuth2 authentication; 
@@ -189,12 +189,12 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
 }
 ```
 
-### SSL configuration
-Enabling SSL on a Spring Boot REST service with a certificate signed by a Certificate Authority (CA) involves a few steps, refer to the following article *[Building robust APIs: a comprehensive guide to OAuth2 and SSL integration in REST services - Part 3](https://medium.com/@robertopozzi/building-robust-apis-a-comprehensive-guide-to-oauth2-and-ssl-integration-in-rest-services-part-2-44213d2e3e62)* for step by step instructions.
+### TLS configuration
+Enabling TLS on a Spring Boot REST service with a certificate signed by a Certificate Authority (CA) involves a few steps, refer to the following article *[Building robust APIs: a comprehensive guide to OAuth2 and TLS integration in REST services - Part 3](https://medium.com/@robertopozzi/building-robust-apis-a-comprehensive-guide-to-oauth2-and-ssl-integration-in-rest-services-part-2-44213d2e3e62)* for step by step instructions.
 
-A convenient script **[setupSSL.sh](ssl/setupSSL.sh)** is provided to generate the SSL certificate and keystore needed to encrypt the traffic.
+A convenient script **[setupTLS.sh](ssl/setupTLS.sh)** is provided to generate the TLS certificate and keystore needed to encrypt the traffic.
 
-Appropriate configuration parameters for SSL need to set in **[application.properties](src/main/resources/application.properties)**, as follows:
+Appropriate configuration parameters for TLS need to set in **[application.properties](src/main/resources/application.properties)**, as follows:
 
 ```
 ### SSL configuration
