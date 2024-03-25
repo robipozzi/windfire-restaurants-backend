@@ -98,7 +98,6 @@ createTLSKeyAndCsr()
     if [ -z $VALIDITY ]; then 
 		inputValidity
 	fi
-    CMD_RUN="keytool -genkeypair -keystore $DEFAULT_TLS_DIR/$KEYSTORE -alias $DEFAULT_KEYSTORE_ALIAS -keyalg RSA -keysize 2048"
     CMD_RUN="keytool -genkeypair -keystore $DEFAULT_TLS_DIR/$KEYSTORE -alias $DEFAULT_KEYSTORE_ALIAS -keyalg RSA -keysize 2048 -validity $DEFAULT_VALIDITY"
     echo ${cyn}Creating keystore using following command:${end} ${grn}$CMD_RUN${end}
     $CMD_RUN
@@ -153,17 +152,17 @@ signCertificate()
     $CMD_RUN
     echo
 
-    echo ${blu}***** Deleting Server Certificate Signing Request ... ${end}
+    #echo ${blu}***** Deleting Server Certificate Signing Request ... ${end}
     #echo rm -rf $DEFAULT_CSR
-    echo
+    #echo
     
-    echo ${blu}***** Deleting CA keystore ... ${end}
+    #echo ${blu}***** Deleting CA keystore ... ${end}
     #echo rm -rf $DEFAULT_CA_KEYSTORE
-    echo
+    #echo
     
-    echo ${blu}***** Deleting Server certificate ... ${end}
+    #echo ${blu}***** Deleting Server certificate ... ${end}
     #echo rm -rf $DEFAULT_SERVER_CERTIFICATE
-    echo
+    #echo
 }
 
 createClientTruststore()
