@@ -1,0 +1,40 @@
+--- # Ansible Playbook to configure a set of Raspberry PIs in a consistent and repeatable way
+# Software installation and configuration
+- hosts: raspberry_sensors
+  remote_user: "{{ user }}"
+  become: yes
+  become_user: "{{ user }}"
+  vars:
+    src_dir: "{{ playbook_dir }}"
+    mode: u=rwx
+  vars_files:
+    - "{{ src_dir }}/conf/raspberry-config.yml"
+  tasks:
+    ###########################################################
+    ##### Windfire Restaurants Backend deployment Section #####
+    ###########################################################
+    - name: Ensure "{{ remote_windfire_restaurants_dir }}" remote directory exists
+      file:
+        path: "{{ remote_windfire_restaurants_dir }}"
+        state: directory
+    - name: Copy Windfire Restaurants Backend runnable jar to "{{ remote_windfire_restaurants_dir }}" folder on remote server
+      copy:
+        src: "../target/windfire-restaurants-backend-0.0.1-SNAPSHOT.jar"
+        dest: "{{ remote_windfire_restaurants_dir }}/windfire-restaurants-backend-0.0.1-SNAPSHOT.jar"
+        owner: "{{ user }}"
+        group: "{{ group }}"
+        mode: "{{ mode }}"
+    - name: Copy "{{ windfire_restaurants_run_script }}" run script to "{{ remote_windfire_restaurants_dir }}" folder on remote server
+      copy:
+        src: "../{{ windfire_restaurants_run_script }}"
+        dest: "{{ remote_windfire_restaurants_dir }}/{{ windfire_restaurants_run_script }}"
+        owner: "{{ user }}"
+        group: "{{ group }}"
+        mode: "{{ mode }}"
+    - name: Copy "{{ windfire_restaurants_setenv_script }}" script to "{{ remote_windfire_restaurants_dir }}" folder on remote server
+      copy:
+        src: "../{{ windfire_restaurants_setenv_script }}"
+        dest: "{{ remote_windfire_restaurants_dir }}/{{ windfire_restaurants_setenv_script }}"
+        owner: "{{ user }}"
+        group: "{{ group }}"
+        mode: "{{ mode }}"
