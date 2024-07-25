@@ -13,14 +13,14 @@
     ###########################################################
     ##### Windfire Restaurants Backend deployment Section #####
     ###########################################################
-    - name: Ensure "{{ remote_windfire_restaurants_dir }}" remote directory exists
+    - name: Ensure "{{ remote_windfire_runjar_dir }}" remote directory exists
       file:
-        path: "{{ remote_windfire_restaurants_dir }}"
+        path: "{{ remote_windfire_runjar_dir }}"
         state: directory
-    - name: Copy Windfire Restaurants Backend runnable jar to "{{ remote_windfire_restaurants_dir }}" folder on remote server
+    - name: Copy Windfire Restaurants Backend runnable jar to "{{ remote_windfire_runjar_dir }}" folder on remote server
       copy:
         src: "../../target/windfire-restaurants-backend-0.0.1-SNAPSHOT.jar"
-        dest: "{{ remote_windfire_restaurants_dir }}/windfire-restaurants-backend-0.0.1-SNAPSHOT.jar"
+        dest: "{{ remote_windfire_runjar_dir }}/windfire-restaurants-backend-0.0.1-SNAPSHOT.jar"
         owner: "{{ user }}"
         group: "{{ group }}"
         mode: "{{ mode }}"

@@ -3,5 +3,6 @@ group: pi
 remote_home_dir: /home/pi
 remote_windfire_dir: "{{ remote_home_dir }}/windfire"
 remote_windfire_restaurants_dir: "{{ remote_windfire_dir }}/restaurants"
+remote_windfire_runjar_dir: "{{ remote_windfire_restaurants_dir }}/target"
 windfire_restaurants_run_script: run-windfire-restaurants-backend.sh
 windfire_restaurants_setenv_script: setenv.sh
