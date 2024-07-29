@@ -1,6 +1,6 @@
 --- # Ansible Playbook to configure a set of Raspberry PIs in a consistent and repeatable way
-# Software installation and configuration for all Raspberry PI boxes
-- hosts: raspberry
+# Software installation and configuration for Raspberry PI box
+- hosts: raspberry_appserver
   remote_user: "{{ user }}"
   become: yes
   vars:
