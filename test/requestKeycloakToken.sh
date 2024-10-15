@@ -2,6 +2,8 @@ source ../setenv.sh
 
 ##### Variable section - START
 SCRIPT=requestKeycloakToken.sh
+DEFAULT_KEYCLOAK_SERVER=raspberry01
+DEFAULT_KEYCLOAK_PORT=8080
 DEFAULT_REALM_ID=windfire-restaurants
 DEFAULT_REALM_USERNAME=windfire
 DEFAULT_GRANT_TYPE=password
@@ -16,6 +18,7 @@ main()
 {	
 	echo ${grn}Running curl command to get OAuth2 Access Token ...${end}
 	
+	inputKeycloakServerEndpoint
 	inputRealmId
 	inputRealmUsername
 	inputRealmPassword
@@ -26,6 +29,21 @@ main()
 		-H "Content-Type: application/x-www-form-urlencoded" \
 		-H "cache-control: no-cache" \
 		-d "client_id=$REALM_ID&username=$REALM_USERNAME&password=$REALM_PASSWORD&grant_type=$GRANT_TYPE"
+}
+
+inputKeycloakServerEndpoint()
+{
+	echo ${cyn}Input Keycloak server URL - leaving blank will set Keycloak server URL to ${end}${mag}$DEFAULT_KEYCLOAK_SERVER : ${end}
+	read KEYCLOAK_SERVER_ADDRESS
+	if [ "$KEYCLOAK_SERVER_ADDRESS" == "" ]; then
+		KEYCLOAK_SERVER_ADDRESS=$DEFAULT_KEYCLOAK_SERVER
+    fi
+    
+    echo ${cyn}Input Keycloak server port - leaving blank will set Keycloak server port to ${end}${mag}$DEFAULT_KEYCLOAK_PORT : ${end}
+	read KEYCLOAK_SERVER_PORT
+	if [ "$KEYCLOAK_SERVER_PORT" == "" ]; then
+		KEYCLOAK_SERVER_PORT=$DEFAULT_KEYCLOAK_PORT
+    fi
 }
 
 inputRealmId()
