@@ -2,8 +2,6 @@ source ../setenv.sh
 
 ##### Variable section - START
 SCRIPT=requestKeycloakToken.sh
-DEFAULT_KEYCLOAK_SERVER=raspberry01
-DEFAULT_KEYCLOAK_PORT=8080
 DEFAULT_REALM_ID=windfire-restaurants
 DEFAULT_REALM_USERNAME=windfire
 DEFAULT_GRANT_TYPE=password
@@ -24,7 +22,7 @@ main()
 	inputRealmPassword
 	inputGrantType
 	
-	curl -X POST http://$KEYCLOAK_SERVER_ADDRESS:$KEYCLOAK_SERVER_PORT/realms/$REALM_ID/protocol/openid-connect/token \
+	curl -X POST http://$KEYCLOAK_HOST:$KEYCLOAK_PORT/realms/$REALM_ID/protocol/openid-connect/token \
 		-H "Accept: application/json" \
 		-H "Content-Type: application/x-www-form-urlencoded" \
 		-H "cache-control: no-cache" \
@@ -33,16 +31,16 @@ main()
 
 inputKeycloakServerEndpoint()
 {
-	echo ${cyn}Input Keycloak server URL - leaving blank will set Keycloak server URL to ${end}${mag}$DEFAULT_KEYCLOAK_SERVER : ${end}
-	read KEYCLOAK_SERVER_ADDRESS
-	if [ "$KEYCLOAK_SERVER_ADDRESS" == "" ]; then
-		KEYCLOAK_SERVER_ADDRESS=$DEFAULT_KEYCLOAK_SERVER
+	echo ${cyn}Input Keycloak server host - leaving blank will set Keycloak server host to ${end}${mag}$DEFAULT_KEYCLOAK_HOST : ${end}
+	read KEYCLOAK_HOST
+	if [ "$KEYCLOAK_HOST" == "" ]; then
+		KEYCLOAK_HOST=$DEFAULT_KEYCLOAK_HOST
     fi
     
     echo ${cyn}Input Keycloak server port - leaving blank will set Keycloak server port to ${end}${mag}$DEFAULT_KEYCLOAK_PORT : ${end}
-	read KEYCLOAK_SERVER_PORT
-	if [ "$KEYCLOAK_SERVER_PORT" == "" ]; then
-		KEYCLOAK_SERVER_PORT=$DEFAULT_KEYCLOAK_PORT
+	read KEYCLOAK_PORT
+	if [ "$KEYCLOAK_PORT" == "" ]; then
+		KEYCLOAK_PORT=$DEFAULT_KEYCLOAK_PORT
     fi
 }
 
