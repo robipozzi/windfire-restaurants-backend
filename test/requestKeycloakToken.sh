@@ -4,8 +4,6 @@ source ../setenv.sh
 ###### Variable section - START ######
 ######################################
 SCRIPT=requestKeycloakToken.sh
-DEFAULT_KEYCLOAK_SERVER=raspberry01
-DEFAULT_KEYCLOAK_PORT=8080
 PLATFORM_OPTION=
 FUNCTION=
 DEFAULT_REALM_ID=windfire-restaurants
@@ -60,7 +58,7 @@ setFunction()
 
 curlNoTLS()
 {
-	CURL="curl -X POST http://$KEYCLOAK_SERVER_ADDRESS:$KEYCLOAK_SERVER_PORT/realms/$REALM_ID/protocol/openid-connect/token"
+	CURL="curl -X POST http://$KEYCLOAK_HOST:$KEYCLOAK_PORT/realms/$REALM_ID/protocol/openid-connect/token"
 	echo ${blu}Running $CURL ...${end}
 	$CURL \
 		-H "Accept: application/json" \
@@ -71,7 +69,7 @@ curlNoTLS()
 
 curlSelfSignedTLS()
 {
-	CURL="curl -X POST https://$KEYCLOAK_SERVER_ADDRESS:$KEYCLOAK_TLS_SERVER_PORT/realms/$REALM_ID/protocol/openid-connect/token"
+	CURL="curl -X POST https://$KEYCLOAK_HOST:$KEYCLOAK_TLS_SERVER_PORT/realms/$REALM_ID/protocol/openid-connect/token"
 	echo ${blu}Running $CURL ...${end}
 	
 	#####################################################
@@ -89,16 +87,16 @@ curlSelfSignedTLS()
 
 inputKeycloakServerEndpoint()
 {
-	echo ${cyn}Input Keycloak server URL - leaving blank will set Keycloak server URL to ${end}${mag}$DEFAULT_KEYCLOAK_SERVER : ${end}
-	read KEYCLOAK_SERVER_ADDRESS
-	if [ "$KEYCLOAK_SERVER_ADDRESS" == "" ]; then
-		KEYCLOAK_SERVER_ADDRESS=$DEFAULT_KEYCLOAK_SERVER
+	echo ${cyn}Input Keycloak server host - leaving blank will set Keycloak server host to ${end}${mag}$DEFAULT_KEYCLOAK_HOST : ${end}
+	read KEYCLOAK_HOST
+	if [ "$KEYCLOAK_HOST" == "" ]; then
+		KEYCLOAK_HOST=$DEFAULT_KEYCLOAK_HOST
     fi
     
     echo ${cyn}Input Keycloak server port - leaving blank will set Keycloak server port to ${end}${mag}$DEFAULT_KEYCLOAK_PORT : ${end}
-	read KEYCLOAK_SERVER_PORT
-	if [ "$KEYCLOAK_SERVER_PORT" == "" ]; then
-		KEYCLOAK_SERVER_PORT=$DEFAULT_KEYCLOAK_PORT
+	read KEYCLOAK_PORT
+	if [ "$KEYCLOAK_PORT" == "" ]; then
+		KEYCLOAK_PORT=$DEFAULT_KEYCLOAK_PORT
     fi
 }
 

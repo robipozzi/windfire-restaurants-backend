@@ -18,12 +18,34 @@ MONGODB_PWD=
 main()
 {
 	CURRENT_DIRECTORY=$(pwd)
-	java -version
+	inputKeycloakServer
+	inputKeycloakServerPort
+	export KEYCLOAK_SERVER=$KEYCLOAK_HOST
+	export KEYCLOAK_SERVER_PORT=$KEYCLOAK_PORT
 	inputKeystorePassword
 	inputMongoDBPassword
 	export KEYSTORE_PASSWORD=$KEYSTORE_PWD
 	export MONGODB_PASSWORD=$MONGODB_PWD
+  java -version
 	java -jar target/$JAR_NAME-$VERSION.jar
+}
+
+inputKeycloakServer()
+{
+	echo ${cyn}Input Keycloak server host - leaving blank will set Keycloak server host to ${end}${mag}$DEFAULT_KEYCLOAK_HOST : ${end}
+	read KEYCLOAK_HOST
+	if [ "$KEYCLOAK_HOST" == "" ]; then
+		KEYCLOAK_HOST=$DEFAULT_KEYCLOAK_HOST
+    fi
+}
+
+inputKeycloakServerPort()
+{
+	echo ${cyn}Input Keycloak server port - leaving blank will set Keycloak server port to ${end}${mag}$DEFAULT_KEYCLOAK_PORT : ${end}
+	read KEYCLOAK_PORT
+	if [ "$KEYCLOAK_PORT" == "" ]; then
+		KEYCLOAK_PORT=$DEFAULT_KEYCLOAK_PORT
+    fi
 }
 
 inputKeystorePassword()
