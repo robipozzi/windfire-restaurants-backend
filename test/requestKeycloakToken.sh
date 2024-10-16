@@ -1,7 +1,11 @@
 source ../setenv.sh
 
-##### Variable section - START
+######################################
+###### Variable section - START ######
+######################################
 SCRIPT=requestKeycloakToken.sh
+PLATFORM_OPTION=
+FUNCTION=
 DEFAULT_REALM_ID=windfire-restaurants
 DEFAULT_REALM_USERNAME=windfire
 DEFAULT_GRANT_TYPE=password
@@ -9,12 +13,16 @@ REALM_ID=
 REALM_USERNAME=
 REALM_PASSWORD=
 GRANT_TYPE=
-##### Variable section - END
+####################################
+###### Variable section - END ######
+####################################
 
-##### Function section - START
+######################################
+###### Function section - START ######
+######################################
 main()
-{	
-	echo ${grn}Running curl command to get OAuth2 Access Token ...${end}
+{
+	printChoosePlatform
 	
 	inputKeycloakServerEndpoint
 	inputRealmId
@@ -22,7 +30,55 @@ main()
 	inputRealmPassword
 	inputGrantType
 	
-	curl -X POST http://$KEYCLOAK_HOST:$KEYCLOAK_PORT/realms/$REALM_ID/protocol/openid-connect/token \
+	echo ${grn}Running curl command to get OAuth2 Access Token ...${end}
+	$FUNCTION
+}
+
+printChoosePlatform()
+{
+	echo ${grn}Select Keycloak platform to test: ${end}
+    echo "${grn}1. Server on Localhost (No TLS)${end}"
+	echo "${grn}2. Server on Localhost (TLS enabled with self signed certificate)${end}"
+	read PLATFORM_OPTION
+	setFunction
+}
+
+setFunction()
+{
+	case $PLATFORM_OPTION in
+		1)  FUNCTION=curlNoTLS
+			;;
+		2)  FUNCTION=curlSelfSignedTLS
+			;;
+		*) 	printf "\n${red}No valid option selected${end}\n"
+			printChooseFunction
+			;;
+	esac
+}
+
+curlNoTLS()
+{
+	CURL="curl -X POST http://$KEYCLOAK_HOST:$KEYCLOAK_PORT/realms/$REALM_ID/protocol/openid-connect/token"
+	echo ${blu}Running $CURL ...${end}
+	$CURL \
+		-H "Accept: application/json" \
+		-H "Content-Type: application/x-www-form-urlencoded" \
+		-H "cache-control: no-cache" \
+		-d "client_id=$REALM_ID&username=$REALM_USERNAME&password=$REALM_PASSWORD&grant_type=$GRANT_TYPE"
+}
+
+curlSelfSignedTLS()
+{
+	CURL="curl -X POST https://$KEYCLOAK_HOST:$KEYCLOAK_TLS_SERVER_PORT/realms/$REALM_ID/protocol/openid-connect/token"
+	echo ${blu}Running $CURL ...${end}
+	
+	#####################################################
+	##### it calls Keycloak using the following		#####
+	##### $HOME/opt/keycloak/ssl/ca_keycloak.pem	#####
+	#####################################################
+	
+	$CURL \
+	    --cacert $DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_CACERT_PEM \
 		-H "Accept: application/json" \
 		-H "Content-Type: application/x-www-form-urlencoded" \
 		-H "cache-control: no-cache" \
@@ -85,7 +141,9 @@ inputGrantType()
 		GRANT_TYPE=$DEFAULT_GRANT_TYPE
     fi
 }
-##### Function section - END
+####################################
+###### Function section - END ######
+####################################
 
 # ##############################################
 # #################### MAIN ####################
