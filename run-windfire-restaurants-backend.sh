@@ -26,7 +26,7 @@ main()
 	inputMongoDBPassword
 	export KEYSTORE_PASSWORD=$KEYSTORE_PWD
 	export MONGODB_PASSWORD=$MONGODB_PWD
-  java -version
+	java -version
 	java -jar target/$JAR_NAME-$VERSION.jar
 }
 

@@ -41,7 +41,6 @@ DEFAULT_CA_ALIAS=ca_windfire
 DEFAULT_CACERT=ca_windfire.cer
 DEFAULT_CACERT_PEM=ca_windfire.pem
 
-
 # Signed certificate settings
 DEFAULT_SERVER_CERTIFICATE=windfire_restaurants_srvc.cer
 
