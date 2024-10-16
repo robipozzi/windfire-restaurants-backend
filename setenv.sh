@@ -12,10 +12,14 @@ coffee3="${coffee} ${coffee} ${coffee}"
 
 ###### Variable section - START
 CURRENT_DIRECTORY=
+## -- Keycloak configurations - START
 DEFAULT_KEYCLOAK_HOST=raspberry01
 DEFAULT_KEYCLOAK_PORT=8080
 KEYCLOAK_HOST=
 KEYCLOAK_PORT=
+## -- Keycloak configurations - END
+## == Application server configurations - START
 APPLICATION_SERVER_ADDRESS=localhost
 APPLICATION_SERVER_PORT=8081
+## == Application server configurations - END
 ###### Variable section - END
