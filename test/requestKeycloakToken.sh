@@ -3,7 +3,9 @@ source ../setenv.sh
 ######################################
 ###### Variable section - START ######
 ######################################
-SCRIPT=testKeycloak.sh
+SCRIPT=requestKeycloakToken.sh
+DEFAULT_KEYCLOAK_SERVER=raspberry01
+DEFAULT_KEYCLOAK_PORT=8080
 PLATFORM_OPTION=
 FUNCTION=
 DEFAULT_REALM_ID=windfire-restaurants
@@ -24,6 +26,7 @@ main()
 {
 	printChoosePlatform
 	
+	inputKeycloakServerEndpoint
 	inputRealmId
 	inputRealmUsername
 	inputRealmPassword
@@ -82,6 +85,21 @@ curlSelfSignedTLS()
 		-H "Content-Type: application/x-www-form-urlencoded" \
 		-H "cache-control: no-cache" \
 		-d "client_id=$REALM_ID&username=$REALM_USERNAME&password=$REALM_PASSWORD&grant_type=$GRANT_TYPE"
+}
+
+inputKeycloakServerEndpoint()
+{
+	echo ${cyn}Input Keycloak server URL - leaving blank will set Keycloak server URL to ${end}${mag}$DEFAULT_KEYCLOAK_SERVER : ${end}
+	read KEYCLOAK_SERVER_ADDRESS
+	if [ "$KEYCLOAK_SERVER_ADDRESS" == "" ]; then
+		KEYCLOAK_SERVER_ADDRESS=$DEFAULT_KEYCLOAK_SERVER
+    fi
+    
+    echo ${cyn}Input Keycloak server port - leaving blank will set Keycloak server port to ${end}${mag}$DEFAULT_KEYCLOAK_PORT : ${end}
+	read KEYCLOAK_SERVER_PORT
+	if [ "$KEYCLOAK_SERVER_PORT" == "" ]; then
+		KEYCLOAK_SERVER_PORT=$DEFAULT_KEYCLOAK_PORT
+    fi
 }
 
 inputRealmId()
