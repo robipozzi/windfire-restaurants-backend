@@ -19,7 +19,9 @@ KEYCLOAK_HOST=
 KEYCLOAK_PORT=
 ## -- Keycloak configurations - END
 ## == Application server configurations - START
-APPLICATION_SERVER_ADDRESS=localhost
-APPLICATION_SERVER_PORT=8081
+DEFAULT_APPLICATION_SERVER_HOST=raspberry02
+DEFAULT_APPLICATION_SERVER_PORT=8081
+APPLICATION_SERVER_HOST=
+APPLICATION_SERVER_PORT=
 ## == Application server configurations - END
 ###### Variable section - END

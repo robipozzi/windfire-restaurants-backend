@@ -12,6 +12,7 @@ AUTHENTICATION_TOKEN=
 main()
 {
 	selectTest
+	inputAppServerEndpoint
 	$RUN_TEST_FUNCTION
 }
 
@@ -19,7 +20,7 @@ getRestaurants()
 {
 	echo ${grn}Running curl command to get Restaurants with HTTP GET method - No Authentication ...${end}
 	
-	curl -X GET http://$APPLICATION_SERVER_ADDRESS:$APPLICATION_SERVER_PORT/restaurants \
+	curl -X GET http://$APPLICATION_SERVER_HOST:$APPLICATION_SERVER_PORT/restaurants \
 		-H "Accept: application/json" \
 		-H "Content-Type: application/json" \
 		-H "cache-control: no-cache"
@@ -29,7 +30,7 @@ getRestaurantsWithToken()
 {
 	echo ${grn}Running curl command to get Restaurants with HTTP GET method - Authentication Token required ...${end}
 	inputAuthenticationToken
-	curl -X GET http://$APPLICATION_SERVER_ADDRESS:$APPLICATION_SERVER_PORT/restaurants \
+	curl -X GET http://$APPLICATION_SERVER_HOST:$APPLICATION_SERVER_PORT/restaurants \
 		-H "Accept: application/json" \
 		-H "Content-Type: application/json" \
 		-H "cache-control: no-cache" \
@@ -57,6 +58,23 @@ setTest()
 			;;
 	esac
 }
+
+##### TODO
+inputAppServerEndpoint()
+{
+	echo ${cyn}Input Application server host - leaving blank will set Application server host to ${end}${mag}$DEFAULT_APPLICATION_SERVER_HOST : ${end}
+	read APPLICATION_SERVER_HOST
+	if [ "$APPLICATION_SERVER_HOST" == "" ]; then
+		APPLICATION_SERVER_HOST=$DEFAULT_APPLICATION_SERVER_HOST
+    fi
+    
+    echo ${cyn}Input Application server port - leaving blank will set Application server port to ${end}${mag}$DEFAULT_APPLICATION_SERVER_PORT : ${end}
+	read APPLICATION_SERVER_PORT
+	if [ "$APPLICATION_SERVER_PORT" == "" ]; then
+		APPLICATION_SERVER_PORT=$DEFAULT_APPLICATION_SERVER_PORT
+    fi
+}
+##### TODO
 
 inputAuthenticationToken()
 {

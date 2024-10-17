@@ -15,7 +15,7 @@ main()
 	export KEYCLOAK_SERVER=$KEYCLOAK_HOST
 	export KEYCLOAK_SERVER_PORT=$KEYCLOAK_PORT
 	java -version
-	java -jar target/$JAR_NAME-$VERSION.jar
+	java -jar target/$JAR_NAME-$VERSION.jar &
 }
 
 inputKeycloakServer()
