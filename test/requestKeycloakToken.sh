@@ -23,13 +23,11 @@ GRANT_TYPE=
 main()
 {
 	printChoosePlatform
-	
 	inputKeycloakServerEndpoint
 	inputRealmId
 	inputRealmUsername
 	inputRealmPassword
 	inputGrantType
-	
 	echo ${grn}Running curl command to get OAuth2 Access Token ...${end}
 	$FUNCTION
 }
@@ -37,8 +35,8 @@ main()
 printChoosePlatform()
 {
 	echo ${grn}Select Keycloak platform to test: ${end}
-    echo "${grn}1. Server on Localhost (No TLS)${end}"
-	echo "${grn}2. Server on Localhost (TLS enabled with self signed certificate)${end}"
+    echo "${grn}1. Keycloak Server (No TLS enabled)${end}"
+	echo "${grn}2. Keycloak Server (TLS enabled with self signed certificate)${end}"
 	read PLATFORM_OPTION
 	setFunction
 }
@@ -50,7 +48,7 @@ setFunction()
 			;;
 		2)  FUNCTION=curlSelfSignedTLS
 			;;
-		*) 	printf "\n${red}No valid option selected${end}\n"
+		*) 	echo ${red}No valid option selected${end}
 			printChooseFunction
 			;;
 	esac

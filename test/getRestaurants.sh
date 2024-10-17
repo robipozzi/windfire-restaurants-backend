@@ -39,7 +39,7 @@ selectTest()
 			;;
 		4)  RUN_TEST_FUNCTION="getRestaurantsWithTokenAndTLS"
 			;;
-		*) 	printf "\n${red}No valid option selected${end}\n"
+		*) 	echo "${red}No valid option selected${end}"
 			selectTest
 			;;
 	esac
@@ -47,7 +47,6 @@ selectTest()
 
 getRestaurants()
 {
-	echo ${grn}Running curl command to get Restaurants with HTTP GET method - No Authentication ...${end}
 	echo ${grn}Get Restaurants with HTTP GET method - No Authentication ...${end}
 	CURL="curl -X GET http://$APPLICATION_SERVER_HOST:$APPLICATION_SERVER_PORT/restaurants"
 	echo ${blu}Running $CURL ...${end}
