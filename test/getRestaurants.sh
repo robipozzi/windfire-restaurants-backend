@@ -25,8 +25,8 @@ main()
 selectTest()
 {
 	echo ${grn}Select test to run : ${end}
-    echo "${grn}1. Get Restaurants (No TLS, No authentication) ${end}"
-	echo "${grn}2. Get Restaurants (No TLS, using an authentication token) ${end}"
+    echo "${grn}1. Get Restaurants (with no authentication) ${end}"
+	echo "${grn}2. Get Restaurants (using an authentication token) ${end}"
 	read TEST_CHOICE
 	case $TEST_CHOICE in
 		1)  RUN_TEST_FUNCTION="getRestaurants"
