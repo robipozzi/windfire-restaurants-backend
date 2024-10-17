@@ -18,13 +18,20 @@ coffee3="${coffee} ${coffee} ${coffee}"
 ###### Variable section - START ######
 ######################################
 CURRENT_DIRECTORY=
+## -- Keycloak configurations - START
 DEFAULT_KEYCLOAK_HOST=raspberry01
 DEFAULT_KEYCLOAK_PORT=8080
 KEYCLOAK_HOST=
 KEYCLOAK_PORT=
 KEYCLOAK_TLS_SERVER_PORT=8443
-APPLICATION_SERVER_ADDRESS=localhost
-APPLICATION_SERVER_PORT=8081
+## -- Keycloak configurations - END
+## == Application server configurations - START
+DEFAULT_APPLICATION_SERVER_HOST=raspberry02
+DEFAULT_APPLICATION_SERVER_PORT=8081
+APPLICATION_SERVER_HOST=
+APPLICATION_SERVER_PORT=
+## == Application server configurations - END
+
 # ************************************
 # ***** Spring Boot TLS settings *****
 # ************************************

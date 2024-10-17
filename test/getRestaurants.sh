@@ -18,6 +18,7 @@ AUTHENTICATION_TOKEN=
 main()
 {
 	selectTest
+	inputAppServerEndpoint
 	$RUN_TEST_FUNCTION
 }
 
@@ -46,8 +47,9 @@ selectTest()
 
 getRestaurants()
 {
+	echo ${grn}Running curl command to get Restaurants with HTTP GET method - No Authentication ...${end}
 	echo ${grn}Get Restaurants with HTTP GET method - No Authentication ...${end}
-	CURL="curl -X GET http://$APPLICATION_SERVER_ADDRESS:$APPLICATION_SERVER_PORT/restaurants"
+	CURL="curl -X GET http://$APPLICATION_SERVER_HOST:$APPLICATION_SERVER_PORT/restaurants"
 	echo ${blu}Running $CURL ...${end}
 	$CURL \
 		-H "Accept: application/json" \
@@ -61,7 +63,7 @@ getRestaurantsWithToken()
 	echo
 	inputAuthenticationToken
 	echo
-	CURL="curl -X GET http://$APPLICATION_SERVER_ADDRESS:$APPLICATION_SERVER_PORT/restaurants"
+	CURL="curl -X GET http://$APPLICATION_SERVER_HOST:$APPLICATION_SERVER_PORT/restaurants"
 	echo ${blu}Running $CURL ...${end}
 	$CURL \
 		-H "Accept: application/json" \
@@ -74,7 +76,7 @@ getRestaurantsWithTLSNoToken()
 {
 	echo ${grn}Get Restaurants with HTTPS GET method - No Authentication Token required ...${end}
 	echo
-	CURL="curl -X GET https://$APPLICATION_SERVER_ADDRESS:$APPLICATION_SERVER_PORT/restaurants --cacert $DEFAULT_TRUSTSTORE_DIR/$DEFAULT_PEM_TRUSTSTORE"
+	CURL="curl -X GET https://$APPLICATION_SERVER_HOST:$APPLICATION_SERVER_PORT/restaurants --cacert $DEFAULT_TRUSTSTORE_DIR/$DEFAULT_PEM_TRUSTSTORE"
 	echo ${blu}Running $CURL ...${end}
 	
 	######################################################################################
@@ -94,7 +96,7 @@ getRestaurantsWithTokenAndTLS()
 	echo
 	inputAuthenticationToken
 	echo
-	CURL="curl -X GET https://$APPLICATION_SERVER_ADDRESS:$APPLICATION_SERVER_PORT/restaurants --cacert $DEFAULT_TRUSTSTORE_DIR/$DEFAULT_PEM_TRUSTSTORE"
+	CURL="curl -X GET https://$APPLICATION_SERVER_HOST:$APPLICATION_SERVER_PORT/restaurants --cacert $DEFAULT_TRUSTSTORE_DIR/$DEFAULT_PEM_TRUSTSTORE"
 	echo ${blu}Running $CURL ...${end}
 	
 	######################################################################################
@@ -115,7 +117,7 @@ __getRestaurantsWithTokenAndTLS()
 	echo
 	inputAuthenticationToken
 	echo
-	CURL="curl -X GET https://$APPLICATION_SERVER_ADDRESS:$APPLICATION_SERVER_PORT/restaurants"
+	CURL="curl -X GET https://$APPLICATION_SERVER_HOST:$APPLICATION_SERVER_PORT/restaurants"
 	echo ${blu}Running $CURL ...${end}
 	$CURL \
 		--cacert $DEFAULT_TRUSTSTORE_DIR/$DEFAULT_PEM_TRUSTSTORE \
@@ -124,6 +126,21 @@ __getRestaurantsWithTokenAndTLS()
 		-H "Content-Type: application/json" \
 		-H "cache-control: no-cache" \
 		-H "Authorization: Bearer $AUTHENTICATION_TOKEN"
+}
+
+inputAppServerEndpoint()
+{
+	echo ${cyn}Input Application server host - leaving blank will set Application server host to ${end}${mag}$DEFAULT_APPLICATION_SERVER_HOST : ${end}
+	read APPLICATION_SERVER_HOST
+	if [ "$APPLICATION_SERVER_HOST" == "" ]; then
+		APPLICATION_SERVER_HOST=$DEFAULT_APPLICATION_SERVER_HOST
+    fi
+    
+    echo ${cyn}Input Application server port - leaving blank will set Application server port to ${end}${mag}$DEFAULT_APPLICATION_SERVER_PORT : ${end}
+	read APPLICATION_SERVER_PORT
+	if [ "$APPLICATION_SERVER_PORT" == "" ]; then
+		APPLICATION_SERVER_PORT=$DEFAULT_APPLICATION_SERVER_PORT
+    fi
 }
 
 inputAuthenticationToken()
