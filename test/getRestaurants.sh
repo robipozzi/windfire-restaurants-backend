@@ -33,7 +33,7 @@ selectTest()
 			;;
         2)  RUN_TEST_FUNCTION="getRestaurantsWithToken"
 			;;
-		*) 	echo ${grn}No valid option selected${end}
+		*) 	echo ${red}No valid option selected${end}
 			selectTest
 			;;
 	esac
