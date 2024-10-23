@@ -35,7 +35,8 @@ APPLICATION_SERVER_PORT=
 # ************************************
 # ***** Spring Boot TLS settings *****
 # ************************************
-DEFAULT_TLS_DIR=$HOME/opt/windfire/ssl
+DEFAULT_TLS_DIR=$HOME/opt/windfire/raspberry/ssl
+LOCAL_DEFAULT_TLS_DIR=$HOME/opt/windfire/ssl
 # Keystore and CSR settings
 DEFAULT_KEYSTORE=windfire_restaurants_srvc.keystore.jks
 DEFAULT_KEYSTORE_ALIAS=windfire_restaurants_srvc

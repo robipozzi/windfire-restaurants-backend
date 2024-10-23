@@ -145,6 +145,29 @@ inputAppServerEndpoint()
 	if [ "$APPLICATION_SERVER_PORT" == "" ]; then
 		APPLICATION_SERVER_PORT=$DEFAULT_APPLICATION_SERVER_PORT
     fi
+    
+    case $APPLICATION_SERVER_HOST in
+		$DEFAULT_APPLICATION_SERVER_HOST) TLS_DIR=$DEFAULT_TLS_DIR
+			;;
+        "localhost") TLS_DIR=$LOCAL_DEFAULT_TLS_DIR
+			;;
+		*) 	TLS_DIR=""
+			;;
+	esac
+}
+
+inputTlsDir()
+{
+    ###### Set TLS dir
+    echo ${grn}Enter TLS folder - leaving blank will set it to ${end}${mag}$TLS_DIR : ${end}
+    read INPUT_TLS_DIR
+    if [ "$INPUT_TLS_DIR" == "" ]; then
+    	INPUT_TLS_DIR=$TLS_DIR
+    fi
+    echo ${blu}TLS folder is set to $INPUT_TLS_DIR${end}
+    
+    TRUSTSTORE_DIR=$INPUT_TLS_DIR/truststore
+    echo ${blu}Truststore folder is set to $TRUSTSTORE_DIR${end}
 }
 
 inputAuthenticationToken()
@@ -155,21 +178,6 @@ inputAuthenticationToken()
 		echo ${red}No Authentication token input${end}
 		inputAuthenticationToken
 	fi
-}
-
-inputTlsDir()
-{
-    ###### Set TLS dir
-    if [ "$TLS_DIR" != "" ]; then
-        echo TLS folder is set to $TLS_DIR
-    else
-        echo ${grn}Enter TLS folder - leaving blank will set it to ${end}${mag}$DEFAULT_TLS_DIR : ${end}
-        read TLS_DIR
-        if [ "$TLS_DIR" == "" ]; then
-            TLS_DIR=$DEFAULT_TLS_DIR
-        fi
-    fi
-    TRUSTSTORE_DIR=$TLS_DIR/truststore
 }
 ####################################
 ###### Function section - END ######
