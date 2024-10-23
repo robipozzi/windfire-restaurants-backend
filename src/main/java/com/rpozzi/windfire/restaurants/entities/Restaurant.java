@@ -1,8 +1,11 @@
 package com.rpozzi.windfire.restaurants.entities;
 
+import org.springframework.data.mongodb.core.mapping.Document;
+
 /**
  * An entity to represent a restaurants.
  */
+@Document("restaurants")
 public class Restaurant {
 	private String id;
 	private String name;
