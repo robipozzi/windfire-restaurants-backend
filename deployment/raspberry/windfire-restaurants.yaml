@@ -11,8 +11,12 @@
     - "{{ src_dir }}/conf/config.yml"
   tasks:
     ###########################################################
-    ##### Windfire Restaurants backend deployment Section #####
+    ##### Windfire Restaurants backend deployment section #####
     ###########################################################
+    - name: Remove "{{ remote_windfirerestaurants_dir }}" remote directory
+      file:
+        path: "{{ remote_windfirerestaurants_run_target_dir }}"
+        state: absent
     - name: Ensure "{{ remote_windfirerestaurants_run_target_dir }}" remote directory exists
       file:
         path: "{{ remote_windfirerestaurants_run_target_dir }}"
@@ -37,3 +41,20 @@
         owner: "{{ user }}"
         group: "{{ group }}"
         mode: "{{ mode }}"
+    ###################################################################
+    ##### Windfire Restaurants TLS certificate deployment section #####
+    ###################################################################
+    - name: Remove "{{ remote_windfirerestaurants_tls_dir }}" remote directory
+      file:
+        path: "{{ remote_windfirerestaurants_tls_dir }}"
+        state: absent
+    - name: Ensure "{{ remote_windfirerestaurants_tls_dir }}" remote directory exists
+      file:
+        path: "{{ remote_windfirerestaurants_tls_dir }}"
+        state: directory
+    - name: Copy Windfire Restaurants keystore "{{ remote_windfirerestaurants_keystore }}" to remote server
+      copy:
+        src: "{{ local_windfirerestaurants_tls_dir }}/{{ remote_windfirerestaurants_keystore }}"
+        dest: "{{ remote_windfirerestaurants_tls_dir }}/{{ remote_windfirerestaurants_keystore }}"
+        owner: "{{ user }}"
+        group: "{{ group }}"

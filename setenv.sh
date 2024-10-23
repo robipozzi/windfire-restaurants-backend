@@ -35,8 +35,8 @@ APPLICATION_SERVER_PORT=
 # ************************************
 # ***** Spring Boot TLS settings *****
 # ************************************
+DEFAULT_TLS_DIR=$HOME/opt/windfire/ssl
 # Keystore and CSR settings
-DEFAULT_TLS_DIR=$HOME/dev/workspaces/windfire/windfire-restaurants-backend/src/main/resources/keystore
 DEFAULT_KEYSTORE=windfire_restaurants_srvc.keystore.jks
 DEFAULT_KEYSTORE_ALIAS=windfire_restaurants_srvc
 DEFAULT_CSR=windfire_restaurants_srvc.csr
@@ -50,9 +50,7 @@ DEFAULT_CACERT_PEM=ca_windfire.pem
 
 # Signed certificate settings
 DEFAULT_SERVER_CERTIFICATE=windfire_restaurants_srvc.cer
-
 # Truststore settings
-DEFAULT_TRUSTSTORE_DIR=$HOME/opt/windfire/ssl/truststore
 DEFAULT_TRUSTSTORE=windfire_restaurants_srvc.truststore.jks
 DEFAULT_PKCS12_TRUSTSTORE=windfire_restaurants_srvc.truststore.p12
 DEFAULT_PEM_TRUSTSTORE=windfire_restaurants_srvc.truststore.pem

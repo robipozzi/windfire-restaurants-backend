@@ -8,6 +8,8 @@ TEST_CHOICE=
 CURL_COMMAND=
 RUN_TEST_FUNCTION=
 AUTHENTICATION_TOKEN=
+TLS_DIR=
+TRUSTSTORE_DIR=
 ####################################
 ###### Variable section - END ######
 ####################################
@@ -73,9 +75,10 @@ getRestaurantsWithToken()
 
 getRestaurantsWithTLSNoToken()
 {
+	inputTlsDir
 	echo ${grn}Get Restaurants with HTTPS GET method - No Authentication Token required ...${end}
 	echo
-	CURL="curl -X GET https://$APPLICATION_SERVER_HOST:$APPLICATION_SERVER_PORT/restaurants --cacert $DEFAULT_TRUSTSTORE_DIR/$DEFAULT_PEM_TRUSTSTORE"
+	CURL="curl -X GET https://$APPLICATION_SERVER_HOST:$APPLICATION_SERVER_PORT/restaurants --cacert $TRUSTSTORE_DIR/$DEFAULT_PEM_TRUSTSTORE"
 	echo ${blu}Running $CURL ...${end}
 	
 	######################################################################################
@@ -91,11 +94,12 @@ getRestaurantsWithTLSNoToken()
 
 getRestaurantsWithTokenAndTLS()
 {
+	inputTlsDir
 	echo ${grn}Get Restaurants with HTTPS GET method - Authentication Token required ...${end}
 	echo
 	inputAuthenticationToken
 	echo
-	CURL="curl -X GET https://$APPLICATION_SERVER_HOST:$APPLICATION_SERVER_PORT/restaurants --cacert $DEFAULT_TRUSTSTORE_DIR/$DEFAULT_PEM_TRUSTSTORE"
+	CURL="curl -X GET https://$APPLICATION_SERVER_HOST:$APPLICATION_SERVER_PORT/restaurants --cacert $TRUSTSTORE_DIR/$DEFAULT_PEM_TRUSTSTORE"
 	echo ${blu}Running $CURL ...${end}
 	
 	######################################################################################
@@ -112,15 +116,16 @@ getRestaurantsWithTokenAndTLS()
 
 __getRestaurantsWithTokenAndTLS()
 {
-	echo ${grn}Getet Restaurants with HTTPS GET method - Authentication Token required ...${end}
+	inputTlsDir
+	echo ${grn}Get Restaurants with HTTPS GET method - Authentication Token required ...${end}
 	echo
 	inputAuthenticationToken
 	echo
 	CURL="curl -X GET https://$APPLICATION_SERVER_HOST:$APPLICATION_SERVER_PORT/restaurants"
 	echo ${blu}Running $CURL ...${end}
 	$CURL \
-		--cacert $DEFAULT_TRUSTSTORE_DIR/$DEFAULT_PEM_TRUSTSTORE \
-		--capath $DEFAULT_TRUSTSTORE_DIR \
+		--cacert $TRUSTSTORE_DIR/$DEFAULT_PEM_TRUSTSTORE \
+		--capath $TRUSTSTORE_DIR \
 		-H "Accept: application/json" \
 		-H "Content-Type: application/json" \
 		-H "cache-control: no-cache" \
@@ -152,6 +157,20 @@ inputAuthenticationToken()
 	fi
 }
 
+inputTlsDir()
+{
+    ###### Set TLS dir
+    if [ "$TLS_DIR" != "" ]; then
+        echo TLS folder is set to $TLS_DIR
+    else
+        echo ${grn}Enter TLS folder - leaving blank will set it to ${end}${mag}$DEFAULT_TLS_DIR : ${end}
+        read TLS_DIR
+        if [ "$TLS_DIR" == "" ]; then
+            TLS_DIR=$DEFAULT_TLS_DIR
+        fi
+    fi
+    TRUSTSTORE_DIR=$TLS_DIR/truststore
+}
 ####################################
 ###### Function section - END ######
 ####################################

@@ -6,6 +6,9 @@ source ../setenv.sh
 SCRIPT=setupTLS.sh
 FUNCTION_CHOICE=
 FUNCTION=
+TLS_DIR=
+KEYSTORE_DIR=
+TRUSTSTORE_DIR=
 KEYSTORE=$1
 VALIDITY=$2
 TRUSTSTORE=$3
@@ -18,7 +21,8 @@ TRUSTSTORE=$3
 ######################################
 main()
 {
-    mkdir -p $DEFAULT_TLS_DIR
+    mkdir -p $KEYSTORE_DIR
+    mkdir -p $TRUSTSTORE_DIR
     $FUNCTION
 }
 
@@ -64,17 +68,17 @@ createCA()
     ###########################################################################################################################################
     echo ${blu}***** Creating $DEFAULT_CA_KEYSTORE CA keystore containing a key pair that will be used to sign $DEFAULT_CACERT CA certificate ... ${end}
     
-    CMD_KEYSTORE_RUN="keytool -genkeypair -keyalg RSA -keysize 2048 -validity $DEFAULT_VALIDITY -keystore $DEFAULT_TLS_DIR/$DEFAULT_CA_KEYSTORE -alias $DEFAULT_CA_ALIAS"                      
+    CMD_KEYSTORE_RUN="keytool -genkeypair -keyalg RSA -keysize 2048 -validity $DEFAULT_VALIDITY -keystore $KEYSTORE_DIR/$DEFAULT_CA_KEYSTORE -alias $DEFAULT_CA_ALIAS"                      
     echo ${cyn}Generating CA keystore using following command:${end} ${grn}$CMD_KEYSTORE_RUN${end}
     $CMD_KEYSTORE_RUN
     echo
     
-    CMD_CERTIFICATE_RUN="keytool -exportcert -keystore $DEFAULT_TLS_DIR/$DEFAULT_CA_KEYSTORE -alias $DEFAULT_CA_ALIAS -file $DEFAULT_TLS_DIR/$DEFAULT_CACERT"
+    CMD_CERTIFICATE_RUN="keytool -exportcert -keystore $KEYSTORE_DIR/$DEFAULT_CA_KEYSTORE -alias $DEFAULT_CA_ALIAS -file $KEYSTORE_DIR/$DEFAULT_CACERT"
     echo ${cyn}Generating $DEFAULT_CACERT CA certificate using following command:${end} ${grn}$CMD_CERTIFICATE_RUN${end}
     $CMD_CERTIFICATE_RUN
     echo
 
-    CMD_CERTIFICATE_RUN="openssl x509 -inform der -in $DEFAULT_TLS_DIR/$DEFAULT_CACERT -out $DEFAULT_TLS_DIR/$DEFAULT_CACERT_PEM"
+    CMD_CERTIFICATE_RUN="openssl x509 -inform der -in $KEYSTORE_DIR/$DEFAULT_CACERT -out $KEYSTORE_DIR/$DEFAULT_CACERT_PEM"
     echo ${cyn}Converting CA certificate to PEM format using following command:${end} ${grn}$CMD_CERTIFICATE_RUN${end}
     $CMD_CERTIFICATE_RUN
     echo
@@ -98,7 +102,7 @@ createTLSKeyAndCsr()
     if [ -z $VALIDITY ]; then 
 		inputValidity
 	fi
-    CMD_RUN="keytool -genkeypair -keystore $DEFAULT_TLS_DIR/$KEYSTORE -alias $DEFAULT_KEYSTORE_ALIAS -keyalg RSA -keysize 2048 -validity $DEFAULT_VALIDITY"
+    CMD_RUN="keytool -genkeypair -keystore $KEYSTORE_DIR/$KEYSTORE -alias $DEFAULT_KEYSTORE_ALIAS -keyalg RSA -keysize 2048 -validity $DEFAULT_VALIDITY"
     echo ${cyn}Creating keystore using following command:${end} ${grn}$CMD_RUN${end}
     $CMD_RUN
     echo
@@ -109,7 +113,7 @@ createTLSKeyAndCsr()
     # used for authentication purposes.                                                                                                      #
     ##########################################################################################################################################
     echo ${blu}***** Generating $DEFAULT_CSR Certificate Signing Request from $KEYSTORE keystore ...${end}
-    CMD_RUN="keytool -certreq -keystore $DEFAULT_TLS_DIR/$KEYSTORE -alias $DEFAULT_KEYSTORE_ALIAS -file $DEFAULT_TLS_DIR/$DEFAULT_CSR"
+    CMD_RUN="keytool -certreq -keystore $KEYSTORE_DIR/$KEYSTORE -alias $DEFAULT_KEYSTORE_ALIAS -file $KEYSTORE_DIR/$DEFAULT_CSR"
     echo ${cyn}Generating CSR using following command:${end} ${grn}$CMD_RUN${end}
     $CMD_RUN
     echo
@@ -126,7 +130,7 @@ signCertificate()
     # Create a server certificate signing the Certificate Signing Request using CA certificate #
     ############################################################################################
     echo ${blu}***** Signing $DEFAULT_SERVER_CERTIFICATE server certificate using CA certificate within $DEFAULT_CA_KEYSTORE CA keystore ... ${end}
-    CMD_RUN="keytool -gencert -keystore $DEFAULT_TLS_DIR/$DEFAULT_CA_KEYSTORE -alias $DEFAULT_CA_ALIAS -infile $DEFAULT_TLS_DIR/$DEFAULT_CSR -outfile $DEFAULT_TLS_DIR/$DEFAULT_SERVER_CERTIFICATE -validity $DEFAULT_VALIDITY"
+    CMD_RUN="keytool -gencert -keystore $KEYSTORE_DIR/$DEFAULT_CA_KEYSTORE -alias $DEFAULT_CA_ALIAS -infile $KEYSTORE_DIR/$DEFAULT_CSR -outfile $KEYSTORE_DIR/$DEFAULT_SERVER_CERTIFICATE -validity $DEFAULT_VALIDITY"
     echo ${cyn}Signing certificate with CA using following command:${end} ${grn}$CMD_RUN${end}
     $CMD_RUN
     echo 
@@ -138,7 +142,7 @@ signCertificate()
     if [ -z $KEYSTORE ]; then 
 		inputKeystore
 	fi
-    CMD_RUN="keytool -import -keystore $DEFAULT_TLS_DIR/$KEYSTORE -file $DEFAULT_TLS_DIR/$DEFAULT_CACERT -alias $DEFAULT_CA_ALIAS"
+    CMD_RUN="keytool -import -keystore $KEYSTORE_DIR/$KEYSTORE -file $KEYSTORE_DIR/$DEFAULT_CACERT -alias $DEFAULT_CA_ALIAS"
     echo ${cyn}Importing CA certificate in keystore using following command:${end} ${grn}$CMD_RUN${end}
     $CMD_RUN
     echo 
@@ -147,7 +151,7 @@ signCertificate()
     # Import the signed server certificate into keystore #
     ######################################################
     echo ${blu}***** Importing $DEFAULT_SERVER_CERTIFICATE signed server certificate into $DEFAULT_KEYSTORE keystore ... ${end}
-	CMD_RUN="keytool -importcert -keystore $DEFAULT_TLS_DIR/$DEFAULT_KEYSTORE -alias $DEFAULT_KEYSTORE_ALIAS -file $DEFAULT_TLS_DIR/$DEFAULT_SERVER_CERTIFICATE"
+	CMD_RUN="keytool -importcert -keystore $KEYSTORE_DIR/$DEFAULT_KEYSTORE -alias $DEFAULT_KEYSTORE_ALIAS -file $KEYSTORE_DIR/$DEFAULT_SERVER_CERTIFICATE"
     echo ${cyn}Importing signed certificate into keystore using following command:${end} ${grn}$CMD_RUN${end}
     $CMD_RUN
     echo
@@ -185,25 +189,25 @@ createClientTruststore()
 		inputTruststore
 	fi
     
-    CMD_RUN="keytool -importcert -file $DEFAULT_TLS_DIR/$DEFAULT_CACERT_PEM -alias $DEFAULT_CA_ALIAS -keystore $DEFAULT_TRUSTSTORE_DIR/$TRUSTSTORE"   
+    CMD_RUN="keytool -importcert -file $TLS_DKEYSTORE_DIRAULT_CACERT_PEM -alias $DEFAULT_CA_ALIAS -keystore $TRUSTSTORE_DIR/$TRUSTSTORE"   
     echo ${cyn}Importing Self CA certificate into client truststore using following command:${end} ${grn}$CMD_RUN${end}
     $CMD_RUN
     echo
 
     echo ${blu}***** Importing $DEFAULT_KEYSTORE server certificate self signed with $DEFAULT_CACERT_PEM CA certificate into $TRUSTSTORE JKS formatted truststore ... ${end}   
-    CMD_RUN="keytool -importkeystore -srckeystore $DEFAULT_TLS_DIR/$DEFAULT_KEYSTORE -destkeystore $DEFAULT_TRUSTSTORE_DIR/$TRUSTSTORE"
+    CMD_RUN="keytool -importkeystore -srckeystore $KEYSTORE_DIR/$DEFAULT_KEYSTORE -destkeystore $TRUSTSTORE_DIR/$TRUSTSTORE"
     echo ${cyn}Importing self signed server certificate into client truststore using following command:${end} ${grn}$CMD_RUN${end}
     $CMD_RUN
     echo
     
     echo ${blu}***** Converting $TRUSTSTORE JKS truststore to $DEFAULT_PKCS12_TRUSTSTORE PKCS12 truststore for non Java clients ... ${end}
-    CMD_PKCS_RUN="keytool -importkeystore -srckeystore $DEFAULT_TRUSTSTORE_DIR/$TRUSTSTORE -destkeystore $DEFAULT_TRUSTSTORE_DIR/$DEFAULT_PKCS12_TRUSTSTORE -srcstoretype JKS -deststoretype PKCS12"
+    CMD_PKCS_RUN="keytool -importkeystore -srckeystore $TRUSTSTORE_DIR/$TRUSTSTORE -destkeystore $TRUSTSTORE_DIR/$DEFAULT_PKCS12_TRUSTSTORE -srcstoretype JKS -deststoretype PKCS12"
     echo ${cyn}Converting JKS truststore to PKCS12 format using following command:${end} ${grn}$CMD_PKCS_RUN${end}
     $CMD_PKCS_RUN
     echo
     
     echo ${blu}***** Converting $DEFAULT_PKCS12_TRUSTSTORE PKCS12 truststore to $DEFAULT_PEM_TRUSTSTORE PEM truststore for non Java clients ... ${end}
-    CMD_PEM_RUN="openssl pkcs12 -in $DEFAULT_TRUSTSTORE_DIR/$DEFAULT_PKCS12_TRUSTSTORE -out $DEFAULT_TRUSTSTORE_DIR/$DEFAULT_PEM_TRUSTSTORE -nodes"
+    CMD_PEM_RUN="openssl pkcs12 -in $TRUSTSTORE_DIR/$DEFAULT_PKCS12_TRUSTSTORE -out $TRUSTSTORE_DIR/$DEFAULT_PEM_TRUSTSTORE -nodes"
     echo ${cyn}Converting PKCS12 truststore to PEM format using following command:${end} ${grn}$CMD_PEM_RUN${end}
     $CMD_PEM_RUN
     echo   
@@ -269,6 +273,22 @@ inputTruststore()
         fi
     fi
 }
+
+inputTlsDir()
+{
+    ###### Set TLS dir
+    if [ "$TLS_DIR" != "" ]; then
+        echo TLS folder is set to $TLS_DIR
+    else
+        echo ${grn}Enter TLS folder - leaving blank will set it to ${end}${mag}$DEFAULT_TLS_DIR : ${end}
+        read TLS_DIR
+        if [ "$TLS_DIR" == "" ]; then
+            TLS_DIR=$DEFAULT_TLS_DIR
+        fi
+    fi
+    KEYSTORE_DIR=$TLS_DIR/keystore
+    TRUSTSTORE_DIR=$TLS_DIR/truststore
+}
 ####################################
 ###### Function section - END ######
 ####################################
@@ -277,4 +297,5 @@ inputTruststore()
 # #################### MAIN ####################
 # ##############################################
 chooseFunction
+inputTlsDir
 main

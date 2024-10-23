@@ -22,6 +22,7 @@ main()
 	inputKeycloakServerPort
 	export KEYCLOAK_SERVER=$KEYCLOAK_HOST
 	export KEYCLOAK_SERVER_PORT=$KEYCLOAK_PORT
+	export HOME_DIR=$HOME
 	inputKeystorePassword
 	inputMongoDBPassword
 	export KEYSTORE_PASSWORD=$KEYSTORE_PWD
@@ -51,7 +52,7 @@ inputKeycloakServerPort()
 inputKeystorePassword()
 {
     ###### Set keystore password
-    echo ${grn}Enter keystore password : ${end}
+    echo ${grn}Enter Windfire keystore password : ${end}
     read -s KEYSTORE_PWD
 }
 
