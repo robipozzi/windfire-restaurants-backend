@@ -12,11 +12,14 @@ public class Address {
 		super();
 	}
 	
-	public Address(String zipCode, String city, String street) {
+	public Address(String zipCode, String city, String street, String province, String region, String country) {
 		super();
 		this.zipCode = zipCode;
 		this.city = city;
 		this.street = street;
+		this.province = province;
+		this.region = region;
+		this.country = country;
 	}
 
 	public String getZipCode() {
