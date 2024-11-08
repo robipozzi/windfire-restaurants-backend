@@ -3,6 +3,7 @@ package com.rpozzi.windfire.restaurants.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -46,6 +47,7 @@ public class RestaurantRESTService {
 	 * GET is the only method allowed
 	 */
 	@GetMapping("/restaurants")
+	@CrossOrigin
 	public Iterable<Restaurant> findAllRestaurants() {
 		logger.info("GET /restaurants");
 		Iterable<Restaurant> restaurants = restaurantService.findAllRestaurants();
@@ -57,6 +59,7 @@ public class RestaurantRESTService {
 	 * GET is the only method allowed
 	 */
 	@GetMapping("/restaurants/{id}")
+	@CrossOrigin
 	public Restaurant findRestaurantById(@PathVariable String id) {
 		logger.info("GET /restaurants/{id}");
 		Restaurant restaurant = restaurantService.findRestaurantById(id);
@@ -68,6 +71,7 @@ public class RestaurantRESTService {
 	 * POST is the only method allowed
 	 */
 	@PostMapping("/restaurants")
+	@CrossOrigin
 	public Restaurant addRestaurant(@RequestBody Restaurant restaurant) {
 		logger.info("POST /restaurants");
 		Restaurant newRestaurant = restaurantService.addRestaurant(restaurant);
@@ -79,6 +83,7 @@ public class RestaurantRESTService {
 	 * DELETE is the only method allowed
 	 */
 	@DeleteMapping("/restaurants/{id}")
+	@CrossOrigin
 	public void removeRestaurant(@PathVariable String id) {
 		logger.info("DELETE /restaurants/{id}");
 		Restaurant restaurant = new Restaurant();
