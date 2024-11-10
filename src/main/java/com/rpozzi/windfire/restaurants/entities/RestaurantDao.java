@@ -2,29 +2,55 @@ package com.rpozzi.windfire.restaurants.entities;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class RestaurantDao {
 	private static final Logger logger = LoggerFactory.getLogger(RestaurantDao.class);
+	@Autowired
+	private IRestaurantRepository restaurantMongoDbRepo;
 
 	public Iterable<Restaurant> findAll() {
 		logger.debug("Executing " + this.getClass().getName() + ".findAll()");
-		Iterable<Restaurant> restaurants = __findAll_fake();
+		Iterable<Restaurant> restaurants = restaurantMongoDbRepo.findAll();
+		//Iterable<Restaurant> restaurants = __findAll_fake();
 		return restaurants;
+	}
+	
+	public Restaurant findById(Object id) {
+		logger.debug("Executing " + this.getClass().getName() + ".findById(id)");
+		Optional<Restaurant> restaurant = restaurantMongoDbRepo.findById((String) id);
+		return restaurant.get();
 	}
 
 	public Restaurant save(Restaurant restaurant) {
 		logger.debug("Executing " + this.getClass().getName() + ".save(restaurant)");
-		restaurant.setId("3");
-		Restaurant newRestaurant = restaurant;
+		Restaurant newRestaurant = restaurantMongoDbRepo.save(restaurant);
 		logger.debug("   id = " + newRestaurant.getId());
 		logger.debug("   name = " + newRestaurant.getName());
 		logger.debug("   address = " + newRestaurant.getAddress().getStreet() + ", "
 				+ newRestaurant.getAddress().getZipCode() + " " + newRestaurant.getAddress().getCity());
 		return newRestaurant;
+	}
+
+//	public Restaurant save(Restaurant restaurant) {
+//		logger.debug("Executing " + this.getClass().getName() + ".save(restaurant)");
+//		restaurant.setId("3");
+//		Restaurant newRestaurant = restaurant;
+//		logger.debug("   id = " + newRestaurant.getId());
+//		logger.debug("   name = " + newRestaurant.getName());
+//		logger.debug("   address = " + newRestaurant.getAddress().getStreet() + ", "
+//				+ newRestaurant.getAddress().getZipCode() + " " + newRestaurant.getAddress().getCity());
+//		return newRestaurant;
+//	}
+
+	public void deleteById(Object id) {
+		logger.debug("Executing " + this.getClass().getName() + ".deleteById(id)");
+		restaurantMongoDbRepo.deleteById((String) id);
 	}
 	
 	private Iterable<Restaurant> __findAll_fake() {
