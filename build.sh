@@ -13,7 +13,7 @@ main()
     fi
 	java -version
 	
-	source mvnw $MAVEN_GOAL
+	mvn $MAVEN_GOAL
 }
 
 printMavenGoals()
