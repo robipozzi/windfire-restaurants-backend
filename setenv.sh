@@ -12,4 +12,10 @@ coffee3="${coffee} ${coffee} ${coffee}"
 
 ###### Variable section - START
 CURRENT_DIRECTORY=
+## == Application server configurations - START
+DEFAULT_APPLICATION_SERVER_HOST=raspberry02
+DEFAULT_APPLICATION_SERVER_PORT=8081
+APPLICATION_SERVER_HOST=
+APPLICATION_SERVER_PORT=
+## == Application server configurations - END
 ###### Variable section - END
