@@ -23,15 +23,9 @@ public class RestaurantDao extends ADao<Restaurant> {
 		return restaurants;
 	}
 
-//	public Iterable<Restaurant> findAll() {
-//		logger.debug("Executing " + this.getClass().getName() + ".findAll()");
-//		Iterable<Restaurant> restaurants = __findAll_fake();
-//		return restaurants;
-//	}
-
 	@Override
 	public Restaurant findById(Object id) {
-		logger.debug("Executing " + this.getClass().getName() + ".findById(id)");
+		logger.debug("Executing " + this.getClass().getName() + ".findById(id) - id = " + id);
 		Optional<Restaurant> restaurant = restaurantMongoDbRepo.findById((String) id);
 		return restaurant.get();
 	}
@@ -47,20 +41,9 @@ public class RestaurantDao extends ADao<Restaurant> {
 		return newRestaurant;
 	}
 
-//	public Restaurant save(Restaurant restaurant) {
-//		logger.debug("Executing " + this.getClass().getName() + ".save(restaurant)");
-//		restaurant.setId("3");
-//		Restaurant newRestaurant = restaurant;
-//		logger.debug("   id = " + newRestaurant.getId());
-//		logger.debug("   name = " + newRestaurant.getName());
-//		logger.debug("   address = " + newRestaurant.getAddress().getStreet() + ", "
-//				+ newRestaurant.getAddress().getZipCode() + " " + newRestaurant.getAddress().getCity());
-//		return newRestaurant;
-//	}
-
 	@Override
 	public void deleteById(Object id) {
-		logger.debug("Executing " + this.getClass().getName() + ".deleteById(id)");
+		logger.debug("Executing " + this.getClass().getName() + ".deleteById(id) - id = " + id);
 		restaurantMongoDbRepo.deleteById((String) id);
 	}
 

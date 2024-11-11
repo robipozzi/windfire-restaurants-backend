@@ -95,4 +95,5 @@ public class Restaurant {
 	public void setWebsite(String website) {
 		this.website = website;
 	}
+	
 }

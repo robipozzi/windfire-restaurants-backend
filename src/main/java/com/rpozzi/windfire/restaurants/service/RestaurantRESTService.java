@@ -61,7 +61,7 @@ public class RestaurantRESTService {
 	@GetMapping("/restaurants/{id}")
 	@CrossOrigin
 	public Restaurant findRestaurantById(@PathVariable String id) {
-		logger.info("GET /restaurants/{id}");
+		logger.info("GET /restaurants/" + id);
 		Restaurant restaurant = restaurantService.findRestaurantById(id);
 		return restaurant;
 	}
@@ -85,7 +85,7 @@ public class RestaurantRESTService {
 	@DeleteMapping("/restaurants/{id}")
 	@CrossOrigin
 	public void removeRestaurant(@PathVariable String id) {
-		logger.info("DELETE /restaurants/{id}");
+		logger.info("DELETE /restaurants/" + id);
 		Restaurant restaurant = new Restaurant();
 		restaurant.setId(id);
 		restaurantService.removeRestaurant(restaurant);
