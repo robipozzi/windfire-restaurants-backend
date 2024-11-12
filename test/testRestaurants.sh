@@ -71,12 +71,34 @@ getRestaurantById()
 createRestaurant()
 {
 	echo ${grn}Create Restaurant with HTTP POST method - No Authentication ...${end}
+	
+	
+	# JSON payload with restaurant information
+	DATA='{
+	  "name": "Cuore e Midollo",
+	  "address": {
+	    "zipCode": "21013",
+	    "city": "Gallarate",
+	    "street": "Via Manzoni 1",
+	    "province": "VA",
+	    "region": "Lombardia",
+	    "country": "Italia"
+	  },
+	  "cuisine": "Italian",
+	  "phone": "+39 03311086289",
+	  "mobile": "+39 3473408128",
+	  "email": "info@ristorantecuoremidollo.it",
+	  "website": "https://ristorantecuoremidollo.it"
+	}'
+	
+	# Send POST request with JSON data
 	CURL="curl -X POST http://$APPLICATION_SERVER_HOST:$APPLICATION_SERVER_PORT/restaurants"
 	echo ${blu}Running $CURL ...${end}
 	$CURL \
 		-H "Accept: application/json" \
 		-H "Content-Type: application/json" \
-		-H "cache-control: no-cache"
+		-H "cache-control: no-cache" \
+		-d "$DATA"
 }
 
 deleteRestaurantById()
@@ -117,7 +139,7 @@ inputAppServerEndpoint()
 
 inputDocumentId()
 {
-	echo ${cyn}Input document id${end}
+	echo ${cyn}Input document id :${end}
 	read DOCUMENT_ID
 }
 ####################################

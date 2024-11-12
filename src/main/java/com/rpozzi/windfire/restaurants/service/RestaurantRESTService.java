@@ -63,8 +63,6 @@ public class RestaurantRESTService {
 	@CrossOrigin
 	public void removeRestaurant(@PathVariable String id) {
 		logger.info("DELETE /restaurants/" + id);
-		Restaurant restaurant = new Restaurant();
-		restaurant.setId(id);
 		restaurantDao.deleteById(id);
 	}
 
