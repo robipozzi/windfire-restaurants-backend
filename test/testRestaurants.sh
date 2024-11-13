@@ -72,7 +72,6 @@ createRestaurant()
 {
 	echo ${grn}Create Restaurant with HTTP POST method - No Authentication ...${end}
 	
-	
 	# JSON payload with restaurant information
 	DATA='{
 	  "name": "Cuore e Midollo",
