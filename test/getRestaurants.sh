@@ -78,7 +78,7 @@ getRestaurantsWithTLSNoToken()
 	inputTlsDir
 	echo ${grn}Get Restaurants with HTTPS GET method - No Authentication Token required ...${end}
 	echo
-	CURL="curl -X GET https://$APPLICATION_SERVER_HOST:$APPLICATION_SERVER_PORT/restaurants --cacert $TRUSTSTORE_DIR/$DEFAULT_PEM_TRUSTSTORE"
+	CURL="curl -X GET https://$APPLICATION_SERVER_HOST:$APPLICATION_SERVER_PORT/restaurants --cacert $TRUSTSTORE_DIR/$DEFAULT_PEM_TRUSTSTORE -k"
 	echo ${blu}Running $CURL ...${end}
 	
 	######################################################################################
@@ -99,7 +99,7 @@ getRestaurantsWithTokenAndTLS()
 	echo
 	inputAuthenticationToken
 	echo
-	CURL="curl -X GET https://$APPLICATION_SERVER_HOST:$APPLICATION_SERVER_PORT/restaurants --cacert $TRUSTSTORE_DIR/$DEFAULT_PEM_TRUSTSTORE"
+	CURL="curl -X GET https://$APPLICATION_SERVER_HOST:$APPLICATION_SERVER_PORT/restaurants --cacert $TRUSTSTORE_DIR/$DEFAULT_PEM_TRUSTSTORE -k"
 	echo ${blu}Running $CURL ...${end}
 	
 	######################################################################################

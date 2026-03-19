@@ -6,7 +6,7 @@ source ../setenv.sh
 SCRIPT=requestKeycloakToken.sh
 PLATFORM_OPTION=
 FUNCTION=
-DEFAULT_REALM_ID=windfire-restaurants
+DEFAULT_REALM_ID=windfire
 DEFAULT_REALM_USERNAME=windfire
 DEFAULT_GRANT_TYPE=password
 REALM_ID=

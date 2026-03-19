@@ -102,9 +102,9 @@ createTLSKeyAndCsr()
     if [ -z $VALIDITY ]; then 
 		inputValidity
 	fi
-    CMD_RUN="keytool -genkeypair -keystore $KEYSTORE_DIR/$KEYSTORE -alias $DEFAULT_KEYSTORE_ALIAS -keyalg RSA -keysize 2048 -validity $DEFAULT_VALIDITY"
+    CMD_RUN="keytool -genkeypair -keystore $KEYSTORE_DIR/$KEYSTORE -alias $DEFAULT_KEYSTORE_ALIAS -keyalg RSA -keysize 2048 -validity $DEFAULT_VALIDITY -dname \"CN=localhost, OU=Windfire, O=Windfire, C=IT\" -ext \"SAN=dns:localhost,dns:raspberry02,ip:127.0.0.1\""
     echo ${cyn}Creating keystore using following command:${end} ${grn}$CMD_RUN${end}
-    $CMD_RUN
+    eval $CMD_RUN
     echo
 
     ##########################################################################################################################################
