@@ -87,4 +87,3 @@ printSummary()
 generateSelfSignedCertificate
 exportCertificate
 printSummary
->>>>>>> feature/secure-rest-oauth2-ssl
