@@ -3,12 +3,15 @@ package com.rpozzi.windfire.restaurants.entities;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.rpozzi.windfire.common.dao.ADao;
 
 @Component
 public class RestaurantDao extends ADao<Restaurant> {
+	private static final Logger logger = LoggerFactory.getLogger(RestaurantDao.class);
 	@Autowired
 	private IRestaurantRepository restaurantMongoDbRepo;
 
@@ -22,8 +25,8 @@ public class RestaurantDao extends ADao<Restaurant> {
 
 	@Override
 	public Restaurant findById(Object id) {
-		logger.debug("Executing " + this.getClass().getName() + ".findById(id)");
-		Optional<Restaurant> restaurant = restaurantMongoDbRepo.findById((String)id);
+		logger.debug("Executing " + this.getClass().getName() + ".findById(id) - id = " + id);
+		Optional<Restaurant> restaurant = restaurantMongoDbRepo.findById((String) id);
 		return restaurant.get();
 	}
 
@@ -37,10 +40,10 @@ public class RestaurantDao extends ADao<Restaurant> {
 				+ newRestaurant.getAddress().getZipCode() + " " + newRestaurant.getAddress().getCity());
 		return newRestaurant;
 	}
-	
+
 	@Override
 	public void deleteById(Object id) {
-		logger.debug("Executing " + this.getClass().getName() + ".deleteById(id)");
+		logger.debug("Executing " + this.getClass().getName() + ".deleteById(id) - id = " + id);
 		restaurantMongoDbRepo.deleteById((String) id);
 	}
 
@@ -51,15 +54,23 @@ public class RestaurantDao extends ADao<Restaurant> {
 		// Create Restaurant 1
 		Restaurant restaurant1 = new Restaurant();
 		restaurant1.setId("1");
-		restaurant1.setName("Il Vecchio Tram");
-		restaurant1.setPhone("0321778914");
-		restaurant1.setMobile("3489008762");
-		restaurant1.setEmail("ilvecchiotram@gmail.com");
-		restaurant1.setWebsite("www.ilvecchiotram.it");
+		restaurant1.setName("La Taverna del Pittore");
+		// START - Set Address 1
+		Address address1 = new Address("28041", "Arona", "Piazza del Popolo, 39", "NO", "Piemonte", "Italia");
+		restaurant1.setAddress(address1);
+		// END - Set Address 1
+		restaurant1.setPhone("0322243366");
+		restaurant1.setMobile("");
+		restaurant1.setEmail("tavernadelpittore.arona@gmail.com");
+		restaurant1.setWebsite("www.tavernadelpittore.com");
 		// Create Restaurant 2
 		Restaurant restaurant2 = new Restaurant();
 		restaurant2.setId("2");
 		restaurant2.setName("Battipalo");
+		// START - Set Address 2
+		Address address2 = new Address("28041", "Lesa", "Viale Vittorio Veneto, 2", "NO", "Piemonte", "Italia");
+		restaurant2.setAddress(address2);
+		// END - Set Address 1
 		restaurant2.setPhone("0321713829");
 		restaurant2.setMobile("3457708391");
 		restaurant2.setEmail("battipalo@gmail.com");
@@ -69,4 +80,5 @@ public class RestaurantDao extends ADao<Restaurant> {
 		restaurants.add(restaurant2);
 		return restaurants;
 	}
+
 }

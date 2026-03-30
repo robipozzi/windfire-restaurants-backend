@@ -4,8 +4,3 @@
 /.project
 /.settings
 /target
-/src/main/resources/keystore/windfire_restaurants_srvc.keystore.jks
-/src/main/resources/windfire-restaurants.p12
-/ssl/ca_windfire.crt
-/ssl/ca_windfire.jks
-/ssl/windfire_restaurants_srvc.crt

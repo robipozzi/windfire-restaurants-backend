@@ -1,11 +1,18 @@
 source ./setenv.sh
 
-##### Variable section - START
+######################################
+###### Variable section - START ######
+######################################
 SCRIPT=build.sh
 MAVEN_GOAL_OPTION=$1
 MAVEN_GOAL=
-##### Variable section - END
+####################################
+###### Variable section - END ######
+####################################
 
+######################################
+###### Function section - START ######
+######################################
 main()
 {
 	if [ -z $MAVEN_GOAL_OPTION ]; then 
@@ -13,7 +20,7 @@ main()
     fi
 	java -version
 	
-	source mvnw $MAVEN_GOAL
+	mvn $MAVEN_GOAL
 }
 
 printMavenGoals()
@@ -43,6 +50,9 @@ setMavenGoal()
 			;;
 	esac
 }
+####################################
+###### Function section - END ######
+####################################
 
 # ##############################################
 # #################### MAIN ####################

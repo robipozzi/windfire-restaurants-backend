@@ -1,6 +1,5 @@
 package com.rpozzi.windfire.restaurants.entities;
 
-import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
@@ -8,7 +7,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
  */
 @Document("restaurants")
 public class Restaurant {
-	@Id
 	private String id;
 	private String name;
 	private Address address;
@@ -97,4 +95,5 @@ public class Restaurant {
 	public void setWebsite(String website) {
 		this.website = website;
 	}
+	
 }
