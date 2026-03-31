@@ -9,7 +9,16 @@
   vars_files:
     - "{{ src_dir }}/conf/config.yml"
   tasks:
+    ##############################################################
+    ##### Windfire Restaurants backend stop application task #####
+    ##############################################################
+    - name: Stop Windfire Restaurants backend application if running
+      command: pkill -f "{{ windfirerestaurants_app_jar }}"
+      ignore_errors: yes
+    ##############################################################
+    ##### Windfire Restaurants backend un-deployment section #####
+    ##############################################################
     - name: Remove "{{ remote_windfirerestaurants_dir }}" remote directory
       file:
-        path: "{{ remote_windfirerestaurants_dir }}"
+        path: "{{ remote_windfirerestaurants_run_target_dir }}"
         state: absent
