@@ -102,8 +102,9 @@ printSummary()
     echo ${blu}**************************************************${end}
     echo ${blu}***** Import certificate into macOS Keychain *****${end}
     echo ${blu}**************************************************${end}
-    echo ${yel}Run the following command to trust the certificate in Safari:${end}
+    echo ${yel}Running the following command to trust the certificate in Safari:${end}
     echo ${grn}sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain $KEYSTORE_DIR/windfire_restaurants_srvc.pem${end}
+    sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain $KEYSTORE_DIR/windfire_restaurants_srvc.pem
     echo
     echo ${yel}Then restart Safari for the change to take effect.${end}
     echo
