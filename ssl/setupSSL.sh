@@ -14,9 +14,9 @@ KEYSTORE_DIR=$LOCAL_DEFAULT_TLS_DIR/keystore
 ######################################
 generateSelfSignedCertificate()
 {
-    echo ${blu}***************************************************************${end}
-    echo ${blu}***** Generate self-signed keystore with SAN extensions    *****${end}
-    echo ${blu}***************************************************************${end}
+    echo ${blu}*************************************************************${end}
+    echo ${blu}***** Generate self-signed keystore with SAN extensions *****${end}
+    echo ${blu}*************************************************************${end}
     echo
 
     mkdir -p $KEYSTORE_DIR

@@ -38,7 +38,6 @@ inputKeycloakServer()
 	if [ "$KEYCLOAK_HOST" == "" ]; then
 		KEYCLOAK_HOST=$DEFAULT_KEYCLOAK_HOST
     fi
->>>>>>> feature/secure-rest-oauth2-ssl
 }
 
 inputKeycloakServerPort()
