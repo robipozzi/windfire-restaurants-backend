@@ -28,9 +28,9 @@ selectPlatform()
 
 checkSSLCertificates()
 {
-    echo ${blu}*************************************************************${end}
-    echo ${blu}***** Check SSL certificates for Raspberry               *****${end}
-    echo ${blu}*************************************************************${end}
+    echo ${blu}************************************************${end}
+    echo ${blu}***** Check SSL certificates for Raspberry *****${end}
+    echo ${blu}************************************************${end}
     echo
     local TLS_KEYSTORE_DIR=$DEFAULT_TLS_DIR/keystore
     if [ ! -d "$TLS_KEYSTORE_DIR" ] || [ ! -f "$TLS_KEYSTORE_DIR/$DEFAULT_KEYSTORE" ]; then
