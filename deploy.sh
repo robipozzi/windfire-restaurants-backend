@@ -11,6 +11,16 @@ main()
 	selectPlatform
 }
 
+buildApplication()
+{
+    echo ${blu}**********************************************${end}
+    echo ${blu}***** Build Java SpringBoot Application  *****${end}
+    echo ${blu}**********************************************${end}
+    echo
+    ./build.sh 4
+    echo
+}
+
 selectPlatform()
 {
 	echo ${grn}Select deployment platform : ${end}
@@ -46,6 +56,7 @@ checkSSLCertificates()
 
 deployRaspberry()
 {
+	buildApplication
 	checkSSLCertificates
 	ansible-playbook deployment/raspberry/windfire-restaurants.yaml
 }	

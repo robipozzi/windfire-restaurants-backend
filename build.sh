@@ -29,6 +29,7 @@ printMavenGoals()
     echo "${grn}1. install${end}"
 	echo "${grn}2. test${end}"
 	echo "${grn}3. clean${end}"
+	echo "${grn}4. clean & install${end}"
 	read MAVEN_GOAL_OPTION
 	setMavenGoal
 }
@@ -44,6 +45,9 @@ setMavenGoal()
             ;;
         3)  printf "\n${grn}Maven goal = clean${end}\n"
             MAVEN_GOAL=clean
+            ;;
+        4)  printf "\n${grn}Maven goal = clean install${end}\n"
+            MAVEN_GOAL="clean install"
             ;;
 		*) 	printf "\n${red}No valid goal selected${end}\n"
 			printMavenGoals
