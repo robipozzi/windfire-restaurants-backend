@@ -20,7 +20,7 @@ coffee3="${coffee} ${coffee} ${coffee}"
 CURRENT_DIRECTORY=
 ## -- Keycloak configurations - START
 DEFAULT_KEYCLOAK_HOST=raspberry01
-DEFAULT_KEYCLOAK_PORT=8080
+DEFAULT_KEYCLOAK_PORT=8443
 KEYCLOAK_HOST=
 KEYCLOAK_PORT=
 KEYCLOAK_TLS_SERVER_PORT=8443
@@ -62,6 +62,7 @@ DEFAULT_PEM_TRUSTSTORE=windfire_restaurants_srvc.truststore.pem
 # Keycloak Truststore settings
 DEFAULT_KEYCLOAK_TRUSTSTORE_DIR=$HOME/opt/keycloak/ssl/truststore
 DEFAULT_KEYCLOAK_CACERT_PEM=keycloak.truststore.pem
+DEFAULT_KEYCLOAK_TRUSTSTORE=keycloak.truststore.jks
 ####################################
 ###### Variable section - END ######
 ####################################

@@ -7,6 +7,7 @@ SCRIPT=run-windfire-restaurants-backend.sh
 JAR_NAME=windfire-restaurants-backend
 VERSION=0.0.1-SNAPSHOT
 KEYSTORE_PWD=
+KEYCLOAK_TRUSTSTORE_PWD=
 MONGODB_PWD=
 ####################################
 ###### Variable section - END ######
@@ -24,11 +25,14 @@ main()
 	export KEYCLOAK_SERVER_PORT=$KEYCLOAK_PORT
 	export HOME_DIR=$HOME
 	inputKeystorePassword
+	inputKeycloakTruststorePassword
 	inputMongoDBPassword
 	export KEYSTORE_PASSWORD=$KEYSTORE_PWD
 	export MONGODB_PASSWORD=$MONGODB_PWD
 	java -version
-	java -jar target/$JAR_NAME-$VERSION.jar &
+	java -Djavax.net.ssl.trustStore=$DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_TRUSTSTORE \
+	     -Djavax.net.ssl.trustStorePassword=$KEYCLOAK_TRUSTSTORE_PWD \
+	     -jar target/$JAR_NAME-$VERSION.jar &
 }
 
 inputKeycloakServer()
@@ -54,6 +58,13 @@ inputKeystorePassword()
     ###### Set keystore password
     echo ${grn}Enter Windfire keystore password : ${end}
     read -s KEYSTORE_PWD
+}
+
+inputKeycloakTruststorePassword()
+{
+    ###### Set Keycloak truststore password
+    echo ${grn}Enter Keycloak truststore password : ${end}
+    read -s KEYCLOAK_TRUSTSTORE_PWD
 }
 
 inputMongoDBPassword()
