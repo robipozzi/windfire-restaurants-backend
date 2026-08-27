@@ -50,17 +50,30 @@
     ###################################################################
     ##### Windfire Restaurants TLS certificate deployment section #####
     ###################################################################
-    - name: Remove "{{ remote_windfirerestaurants_tls_dir }}" remote directory
+    - name: Remove remote TLS directories
       file:
-        path: "{{ remote_windfirerestaurants_tls_dir }}"
+        path: "{{ item }}"
         state: absent
-    - name: Ensure "{{ remote_windfirerestaurants_tls_dir }}" remote directory exists
+      loop:
+        - "{{ remote_windfirerestaurants_certs_dir }}"
+        - "{{ remote_windfirerestaurants_keystore_dir }}"
+    - name: Ensure remote TLS directories exist
       file:
-        path: "{{ remote_windfirerestaurants_tls_dir }}"
+        path: "{{ item }}"
         state: directory
-    - name: Copy Windfire Restaurants keystore "{{ remote_windfirerestaurants_keystore }}" to remote server
+      loop:
+        - "{{ remote_windfirerestaurants_certs_dir }}"
+        - "{{ remote_windfirerestaurants_keystore_dir }}"
+    - name: Copy Windfire Restaurants certificate "{{ remote_windfirerestaurants_certificate }}" to remote server
       copy:
-        src: "{{ local_windfirerestaurants_tls_dir }}/{{ remote_windfirerestaurants_keystore }}"
-        dest: "{{ remote_windfirerestaurants_tls_dir }}/{{ remote_windfirerestaurants_keystore }}"
+        src: "{{ local_windfirerestaurants_certs_dir }}/{{ remote_windfirerestaurants_certificate }}"
+        dest: "{{ remote_windfirerestaurants_certs_dir }}/{{ remote_windfirerestaurants_certificate }}"
         owner: "{{ user }}"
         group: "{{ group }}"
+    - name: Copy Windfire Restaurants private key "{{ remote_windfirerestaurants_key }}" to remote server
+      copy:
+        src: "{{ local_windfirerestaurants_keystore_dir }}/{{ remote_windfirerestaurants_key }}"
+        dest: "{{ remote_windfirerestaurants_keystore_dir }}/{{ remote_windfirerestaurants_key }}"
+        owner: "{{ user }}"
+        group: "{{ group }}"
+        mode: "0600"

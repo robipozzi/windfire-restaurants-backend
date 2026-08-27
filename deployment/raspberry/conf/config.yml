@@ -6,6 +6,9 @@ remote_windfirerestaurants_run_target_dir: "{{ remote_windfirerestaurants_dir }}
 windfirerestaurants_app_jar: windfire-restaurants-backend-0.0.1-SNAPSHOT.jar
 windfirerestaurants_launch_script: run-windfire-restaurants-backend.sh
 setenv_script: setenv.sh
-local_windfirerestaurants_tls_dir: "/Users/robertopozzi/opt/windfire/raspberry/ssl/keystore"
-remote_windfirerestaurants_tls_dir: "{{ remote_home_dir }}/opt/windfire/ssl/keystore"
-remote_windfirerestaurants_keystore: "/windfire_restaurants_srvc.keystore.jks"
+local_windfirerestaurants_certs_dir: "/Users/robertopozzi/opt/windfire/ssl/certs/raspberry"
+local_windfirerestaurants_keystore_dir: "/Users/robertopozzi/opt/windfire/ssl/keystore/raspberry"
+remote_windfirerestaurants_certs_dir: "{{ remote_home_dir }}/opt/windfire/ssl/certs"
+remote_windfirerestaurants_keystore_dir: "{{ remote_home_dir }}/opt/windfire/ssl/keystore"
+remote_windfirerestaurants_certificate: "windfire-restaurants-backend.crt"
+remote_windfirerestaurants_key: "windfire-restaurants-backend.key"

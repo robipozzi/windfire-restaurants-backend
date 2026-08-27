@@ -42,14 +42,14 @@ checkSSLCertificates()
     echo ${blu}***** Check SSL certificates for Raspberry *****${end}
     echo ${blu}************************************************${end}
     echo
-    local TLS_KEYSTORE_DIR=$DEFAULT_TLS_DIR/keystore
-    if [ ! -d "$TLS_KEYSTORE_DIR" ] || [ ! -f "$TLS_KEYSTORE_DIR/$DEFAULT_KEYSTORE" ]; then
-        echo ${yel}SSL keystore not found in $TLS_KEYSTORE_DIR. Generating...${end}
+    if [ ! -f "$RASPBERRY_CERTS_DIR/$DEFAULT_CERTIFICATE" ] || [ ! -f "$RASPBERRY_KEYSTORE_DIR/$DEFAULT_KEY" ]; then
+        echo ${yel}SSL certificate/key not found for raspberry environment. Generating...${end}
+        echo ${yel}When prompted, select option 2 \(raspberry\)${end}
         echo
-        mkdir -p $TLS_KEYSTORE_DIR
-        (cd ssl && ./setupSSL.sh)
+        (cd ssl && ./generate-ssl-cert.sh)
     else
-        echo ${grn}SSL certificates found in $TLS_KEYSTORE_DIR${end}
+        echo ${grn}SSL certificate found in $RASPBERRY_CERTS_DIR${end}
+        echo ${grn}SSL key found in $RASPBERRY_KEYSTORE_DIR${end}
     fi
     echo
 }
