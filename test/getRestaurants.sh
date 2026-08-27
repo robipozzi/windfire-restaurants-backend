@@ -8,7 +8,6 @@ TEST_CHOICE=
 CURL_COMMAND=
 RUN_TEST_FUNCTION=
 AUTHENTICATION_TOKEN=
-TLS_DIR=
 TRUSTSTORE_DIR=
 ####################################
 ###### Variable section - END ######
@@ -82,20 +81,20 @@ getRestaurantsWithTLSNoToken()
 	### *******************************************
 	### ***************** WARNING *****************
 	### *******************************************
-	### The self-signed certificate must be imported in the keychain
-	### If it is not cacert directive pointing to a truststore should be added to the curl command
-	#CURL="curl -X GET https://$APPLICATION_SERVER_HOST:$APPLICATION_SERVER_PORT/restaurants --cacert $TRUSTSTORE_DIR/$DEFAULT_PEM_TRUSTSTORE -k"
+	### The Windfire Root CA must be imported in the keychain (see ssl/generate-ssl-cert.sh)
+	### If it is not, a --cacert directive pointing to the Root CA should be added to the curl command
+	#CURL="curl -X GET https://$APPLICATION_SERVER_HOST:$APPLICATION_SERVER_PORT/restaurants --cacert $TRUSTSTORE_DIR/$DEFAULT_ROOT_CA_CERTIFICATE -k"
 	echo ${blu}Running $CURL ...${end}
-	
+
 	######################################################################################
-	##### it calls SpringBoot app using the following								 #####
-	##### $HOME/opt/windfire/ssl/truststore/windfire_restaurants_srvc.truststore.pem #####
+	##### it calls SpringBoot app trusting the Windfire Root CA in the following	 #####
+	##### $DEFAULT_ROOT_CA_TRUSTSTORE_DIR/$DEFAULT_ROOT_CA_CERTIFICATE				 #####
 	######################################################################################
-	
+
 	$CURL \
 		-H "Accept: application/json" \
 		-H "Content-Type: application/json" \
-		-H "cache-control: no-cache" \		
+		-H "cache-control: no-cache"
 }
 
 getRestaurantsWithTokenAndTLS()
@@ -109,16 +108,16 @@ getRestaurantsWithTokenAndTLS()
 	### *******************************************
 	### ***************** WARNING *****************
 	### *******************************************
-	### The self-signed certificate must be imported in the keychain
-	### If it is not cacert directive pointing to a truststore should be added to the curl command
-	#CURL="curl -X GET https://$APPLICATION_SERVER_HOST:$APPLICATION_SERVER_PORT/restaurants --cacert $TRUSTSTORE_DIR/$DEFAULT_PEM_TRUSTSTORE -k"
+	### The Windfire Root CA must be imported in the keychain (see ssl/generate-ssl-cert.sh)
+	### If it is not, a --cacert directive pointing to the Root CA should be added to the curl command
+	#CURL="curl -X GET https://$APPLICATION_SERVER_HOST:$APPLICATION_SERVER_PORT/restaurants --cacert $TRUSTSTORE_DIR/$DEFAULT_ROOT_CA_CERTIFICATE -k"
 	echo ${blu}Running $CURL ...${end}
-	
+
 	######################################################################################
-	##### it calls SpringBoot app using the following								 #####
-	##### $HOME/opt/windfire/ssl/truststore/windfire_restaurants_srvc.truststore.pem #####
+	##### it calls SpringBoot app trusting the Windfire Root CA in the following	 #####
+	##### $DEFAULT_ROOT_CA_TRUSTSTORE_DIR/$DEFAULT_ROOT_CA_CERTIFICATE				 #####
 	######################################################################################
-	
+
 	$CURL \
 		-H "Accept: application/json" \
 		-H "Content-Type: application/json" \
@@ -136,7 +135,7 @@ __getRestaurantsWithTokenAndTLS()
 	CURL="curl -X GET https://$APPLICATION_SERVER_HOST:$APPLICATION_SERVER_PORT/restaurants"
 	echo ${blu}Running $CURL ...${end}
 	$CURL \
-		--cacert $TRUSTSTORE_DIR/$DEFAULT_PEM_TRUSTSTORE \
+		--cacert $TRUSTSTORE_DIR/$DEFAULT_ROOT_CA_CERTIFICATE \
 		--capath $TRUSTSTORE_DIR \
 		-H "Accept: application/json" \
 		-H "Content-Type: application/json" \
@@ -157,28 +156,18 @@ inputAppServerEndpoint()
 	if [ "$APPLICATION_SERVER_PORT" == "" ]; then
 		APPLICATION_SERVER_PORT=$DEFAULT_APPLICATION_SERVER_PORT
     fi
-    
-    case $APPLICATION_SERVER_HOST in
-		$DEFAULT_APPLICATION_SERVER_HOST) TLS_DIR=$DEFAULT_TLS_DIR
-			;;
-        "localhost") TLS_DIR=$LOCAL_DEFAULT_TLS_DIR
-			;;
-		*) 	TLS_DIR=""
-			;;
-	esac
 }
 
 inputTlsDir()
 {
-    ###### Set TLS dir
-    echo ${grn}Enter TLS folder - leaving blank will set it to ${end}${mag}$TLS_DIR : ${end}
-    read INPUT_TLS_DIR
-    if [ "$INPUT_TLS_DIR" == "" ]; then
-    	INPUT_TLS_DIR=$TLS_DIR
+    ###### Set Root CA truststore dir - the same Windfire Root CA signs every server
+    ###### certificate (localhost and raspberry alike), so a single truststore is enough
+    echo ${grn}Enter Root CA truststore folder - leaving blank will set it to ${end}${mag}$DEFAULT_ROOT_CA_TRUSTSTORE_DIR : ${end}
+    read INPUT_TRUSTSTORE_DIR
+    if [ "$INPUT_TRUSTSTORE_DIR" == "" ]; then
+    	INPUT_TRUSTSTORE_DIR=$DEFAULT_ROOT_CA_TRUSTSTORE_DIR
     fi
-    echo ${blu}TLS folder is set to $INPUT_TLS_DIR${end}
-    
-    TRUSTSTORE_DIR=$INPUT_TLS_DIR/truststore
+    TRUSTSTORE_DIR=$INPUT_TRUSTSTORE_DIR
     echo ${blu}Truststore folder is set to $TRUSTSTORE_DIR${end}
 }
 
