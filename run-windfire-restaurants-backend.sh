@@ -25,9 +25,7 @@ main()
 	inputMongoDBPassword
 	export MONGODB_PASSWORD=$MONGODB_PWD
 	java -version
-	java -Djavax.net.ssl.trustStore=$DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_TRUSTSTORE \
-	     -Djavax.net.ssl.trustStorePassword=$KEYCLOAK_TRUSTSTORE_PWD \
-	     -jar target/$JAR_NAME-$VERSION.jar &
+	java -jar target/$JAR_NAME-$VERSION.jar &
 }
 
 inputKeycloakServer()
