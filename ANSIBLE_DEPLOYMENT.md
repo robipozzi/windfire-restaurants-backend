@@ -40,9 +40,10 @@ Decisions made:
    built by `ssl/generate-keycloak-truststore.sh`, see `KEYCLOAK_TLS_TRUST_PLAN.md`) is built and consumed
    only on the local dev machine. Nothing copies it — or the Keycloak CA it's built from — to `raspberry02`,
    so a JVM started there has no way to validate Keycloak's TLS cert.
-4. **Minor** — `deploy.sh` always prompts for the platform even though there's only ever been one option;
-   sibling `deploy.sh` scripts (`windfire-maps`, `windfire-restaurants-node`) accept it as `$1` and only
-   prompt when omitted.
+4. **Note** — `deploy.sh` always prompts for the platform even though there's only ever been one option.
+   Unlike sibling `deploy.sh` scripts (`windfire-maps`, `windfire-restaurants-node`), which accept it as
+   `$1` and only prompt when omitted, this one is left as-is deliberately: the prompt stays in place for
+   whenever a second platform option shows up.
 
 ## Design
 
@@ -57,8 +58,8 @@ changes needed there). Call it from `deployRaspberry()` alongside `checkSSLCerti
 Add prompts (same style as `run-windfire-restaurants-backend.sh`'s `input*` functions, defaults from
 `setenv.sh`) for Keycloak host, Keycloak port, Keycloak truststore password, and MongoDB password, then
 `export` them as `KEYCLOAK_SERVER`, `KEYCLOAK_SERVER_PORT`, `KEYCLOAK_TRUSTSTORE_PWD`, `MONGODB_PASSWORD`
-before invoking `ansible-playbook`. Also accept `$1` for platform selection, matching the sibling scripts'
-convention (finding 4).
+before invoking `ansible-playbook`. `selectPlatform()`'s interactive prompt is left untouched (finding 4) —
+it still always asks, even though `1. Raspberry` is the only option today.
 
 ### 3. `deployment/raspberry/conf/config.yml` gains the truststore paths
 Add, following the existing `local_windfirerestaurants_certs_dir` / `remote_windfirerestaurants_certs_dir`
@@ -129,7 +130,8 @@ keycloak_truststore_file: "keycloak.truststore.jks"
   `daemon_reload`, before the existing directory removal.
 
 ## Files to change
-- `deploy.sh` — `checkKeycloakTruststore()`, secret prompts, `$1` platform arg.
+- `deploy.sh` — `checkKeycloakTruststore()`, secret prompts. Platform selection (`selectPlatform()`)
+  stays interactive-only, unchanged.
 - `deployment/raspberry/conf/config.yml` — new truststore vars.
 - `deployment/raspberry/windfire-restaurants.yaml` — truststore copy, systemd templating/start, verification.
 - `deployment/raspberry/windfire-restaurants-uninstall.yaml` — host fix, systemd-aware teardown.
@@ -141,13 +143,14 @@ or `ssl/generate-keycloak-truststore.sh` — all four are already correct/idempo
 (local/manual) purpose and are reused as-is or left untouched.
 
 ## Verification
-1. `./deploy.sh 1` from a machine that has never run it before: confirm `checkSSLCertificates` and
+1. `./deploy.sh`, selecting option `1` (Raspberry) at the platform prompt, from a machine that has never
+   run it before: confirm `checkSSLCertificates` and
    `checkKeycloakTruststore` both generate their artifacts locally without manual intervention beyond the
    new prompts, `ansible-playbook` runs clean, and it ends with the `wait_for` port check passing.
 2. On `raspberry02`: `systemctl status windfire-restaurants-backend` shows `active (running)`, and
    `journalctl -u windfire-restaurants-backend` / the app's own log file shows a clean Spring Boot startup
    with no `JwtDecoderInitializationException` (confirms the copied truststore is wired correctly).
-3. Re-run `./deploy.sh 1` a second time (redeploy over a running instance): confirm the `systemd` stop task
+3. Re-run `./deploy.sh` a second time (redeploy over a running instance): confirm the `systemd` stop task
    doesn't fail, the new jar is picked up, and the service comes back up — this is the main regression risk
    of moving from `pkill` to `systemd`.
 4. `curl` (via `test/getRestaurants.sh` + `test/requestKeycloakToken.sh`) against
