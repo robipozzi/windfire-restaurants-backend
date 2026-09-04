@@ -7,6 +7,7 @@
 - [How the application works](#how-the-application-works)
     - [Implementing OAuth2 Authentication with Keycloak](#implementing-oauth2-authentication-with-keycloak)
     - [TLS configuration](#tls-configuration)
+    - [Keycloak client trust (outbound TLS)](#keycloak-client-trust-outbound-tls)
     - [Test the application](#test-the-application)
 
 ## Introduction
@@ -35,7 +36,7 @@ Once requirements are met, one can build and run the application with the follow
 
 A convenient script **[build.sh](build.sh)** is provided to build the application from source code.
 
-Another script **[run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh)** is provided to run the application, once it has been built.
+Another script **[run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh)** is provided to run the application, once it has been built. Before running it for the first time, see [Keycloak client trust (outbound TLS)](#keycloak-client-trust-outbound-tls) for a one-time truststore setup step it now depends on.
 
 ## How the application works
 The application implements a REST service, using Spring Boot construct, i.e. simply tagging a class as **@RestController**, as 
@@ -218,6 +219,47 @@ server.ssl.certificate=file:${HOME_DIR}/opt/windfire/ssl/certs/windfire-restaura
 # The path to the certificate's private key
 server.ssl.certificate-private-key=file:${HOME_DIR}/opt/windfire/ssl/keystore/windfire-restaurants-backend.key
 ```
+
+### Keycloak client trust (outbound TLS)
+The TLS configuration described just above is *inbound*: it lets clients trust this application's own
+certificate. Since Keycloak was switched to HTTPS-only, serving `https://raspberry01:8443` with a
+self-signed certificate, the application also needs *outbound* trust: when it fetches Keycloak's OIDC
+metadata to validate incoming JWTs, the JVM needs to trust Keycloak's self-signed CA too. There is no
+custom `RestTemplate`/`JwtDecoder`/`SSLContext` bean in the codebase, so this trust cannot be set as a
+Spring property — it is supplied JVM-wide via `-Djavax.net.ssl.trustStore` /
+`-Djavax.net.ssl.trustStorePassword` on the `java` invocation.
+
+**Important:** because it is JVM-wide, this truststore covers every outbound TLS connection the
+process makes, not just Keycloak — including the outbound MongoDB Atlas connection, whose certificate
+is signed by a public CA. To avoid losing that trust, the truststore is not built from scratch: it is
+seeded from the running JDK's own default `cacerts` (which already trusts the public CAs) and then
+Keycloak's CA is imported into that copy.
+
+A convenient script **[generate-keycloak-truststore.sh](ssl/generate-keycloak-truststore.sh)** is
+provided to (re)build this truststore. It expects Keycloak's CA certificate to already exist at
+`$DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_CACERT_PEM` (it only rebuilds the truststore, it
+does not create the CA certificate itself), then:
+- copies the running JDK's default `cacerts` to
+  `$DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_TRUSTSTORE`, replacing any existing truststore
+  there
+- imports Keycloak's CA certificate into that copy under alias `ca_keycloak`, using the password from
+  `DEFAULT_KEYCLOAK_TRUSTSTORE_PWD` in **[setenv.sh](setenv.sh)** (`changeit` by default)
+- verifies the merge worked, by confirming both a known public CA and the new `ca_keycloak` alias are
+  listed in the resulting truststore
+
+Run it once (and again whenever Keycloak's CA certificate changes) with:
+```bash
+cd ssl
+./generate-keycloak-truststore.sh
+```
+
+This is a one-time/local setup step whose *output* (the `.jks` file) is not tracked in git — only the
+script that produces it lives in the repository.
+
+**[run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh)** now also prompts for the
+truststore password, defaulting to `DEFAULT_KEYCLOAK_TRUSTSTORE_PWD` from **[setenv.sh](setenv.sh)**,
+and passes it to the JVM via `-Djavax.net.ssl.trustStorePassword` alongside
+`-Djavax.net.ssl.trustStore`.
 
 ### Test the application
 Two scripts are provided to test the application

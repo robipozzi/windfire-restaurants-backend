@@ -24,7 +24,8 @@ called this out and most of the groundwork is already in place:
 What's still missing — and what actually causes the error:
 1. A **JKS truststore** built from that CA cert. One exists at
    `$HOME/opt/keycloak/ssl/truststore/keycloak.truststore.jks` but its password is unknown/lost
-   (neither blank nor `changeit` opens it), so it needs to be regenerated.
+   (neither blank nor `changeit` opens it), so it needs to be regenerated — now automated by
+   `ssl/generate-keycloak-truststore.sh` (see below).
 2. `run-windfire-restaurants-backend.sh` never passes `-Djavax.net.ssl.trustStore` /
    `-Djavax.net.ssl.trustStorePassword` to the `java -jar` invocation, so the JVM falls back to its
    default cacerts, which doesn't know about Keycloak's CA.
@@ -39,21 +40,54 @@ doc already recommended (and the same pattern already used for the backend's own
 
 ### 1. Regenerate the Keycloak client truststore (one-time local setup, not tracked in git)
 
-Delete the existing unreadable JKS and rebuild it from the already-present CA PEM, with a known
-password:
+**Important:** this truststore is wired in via `-Djavax.net.ssl.trustStore`, which is JVM-wide —
+it doesn't just cover Keycloak's HTTPS calls, it replaces the *default* trust store for every TLS
+client in the process, including the outbound MongoDB Atlas connection
+(`spring.data.mongodb.uri=mongodb+srv://...@windfire.rxdd4.mongodb.net/restaurants`), whose
+certificate is signed by a public CA that lives in the JDK's default `cacerts`, not by Keycloak's
+CA. There's no custom `SSLContext`/`MongoClientSettings` bean anywhere in this codebase, so Mongo's
+TLS trust today comes entirely from that default `cacerts`. Building the new truststore from an
+empty keystore containing *only* the Keycloak CA (as a naive rebuild would) would fix the Keycloak
+PKIX error while breaking Mongo's with the exact same error.
 
+So instead of starting from an empty keystore, seed the new truststore from the running JDK's own
+default `cacerts` (which already trusts the public CAs, including whichever signed the Atlas
+cert), then add Keycloak's CA into that copy.
+
+This is now automated by **[ssl/generate-keycloak-truststore.sh](ssl/generate-keycloak-truststore.sh)**,
+which:
+1. Locates the default `cacerts` of whichever JDK is on the `PATH` (works identically on a Mac
+   dev machine and a Linux/Raspberry Pi deployment target — no dependency on macOS-only
+   `/usr/libexec/java_home` or GNU-only `readlink -f`).
+2. Copies it to `$DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_TRUSTSTORE`, replacing any
+   existing truststore there.
+3. Imports Keycloak's CA cert (`$DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_CACERT_PEM`)
+   into it via `keytool -importcert`, under alias `ca_keycloak`, using the password from the new
+   `DEFAULT_KEYCLOAK_TRUSTSTORE_PWD` variable in `setenv.sh` (`changeit` by default — the
+   conventional Java truststore default, and already the password of the JDK's own `cacerts` this
+   script copies from, so this doesn't introduce a new secret).
+4. Verifies the merge worked: both a known public CA and the new `ca_keycloak` alias must be
+   listed by `keytool -list` on the resulting file.
+
+Since JDK 9+, `cacerts` ships in PKCS12 format (not JKS); copying it forward preserves that format,
+which matches the JVM's own default `javax.net.ssl.trustStoreType` on JDK 17 (this project's
+target per `pom.xml`), so no extra `-Djavax.net.ssl.trustStoreType` flag is needed at runtime
+despite the file keeping its existing `keycloak.truststore.jks` name.
+
+Run it once (and again whenever Keycloak's CA certificate changes) with:
 ```bash
-rm -f "$HOME/opt/keycloak/ssl/truststore/keycloak.truststore.jks"
-keytool -importcert -trustcacerts -noprompt \
-  -alias ca_keycloak \
-  -file "$HOME/opt/keycloak/ssl/truststore/keycloak.truststore.pem" \
-  -keystore "$HOME/opt/keycloak/ssl/truststore/keycloak.truststore.jks" \
-  -storepass changeit
+cd ssl
+./generate-keycloak-truststore.sh
 ```
 
-(`changeit` is the conventional Java truststore default; this file holds only a public CA
-certificate, so it doesn't need a strong secret — it's used purely so the JVM will trust
-Keycloak's HTTPS endpoint.)
+This is a one-time/local setup step whose *output* (the `.jks` file) is not tracked in git — only
+the script that produces it lives in the repository. See the
+[README](README.md#keycloak-client-trust-outbound-tls) for a user-facing description.
+
+Requirement 3 (the app's own inbound TLS via `windfire-restaurants-backend.crt`, signed by the
+separate Windfire Root CA) needs no changes here — it's wired in via
+`server.ssl.certificate`/`server.ssl.certificate-private-key` (PEM keystore config), a completely
+different mechanism from this JVM-wide client-trust property.
 
 ### 2. `setenv.sh` — add a default password variable
 
@@ -78,6 +112,12 @@ DEFAULT_KEYCLOAK_TRUSTSTORE_PWD=changeit
 
 ## Verification
 
-1. `curl --cacert "$HOME/opt/keycloak/ssl/truststore/keycloak.truststore.pem" https://raspberry01:8443/realms/windfire/.well-known/openid-configuration` — confirms the CA cert itself is valid and the chain resolves, independent of the Java changes.
-2. Run `./run-windfire-restaurants-backend.sh`, accept the new truststore password prompt (default), and confirm the app starts with no `SSLHandshakeException`/`JwtDecoderInitializationException` in the log.
-3. Call `https://localhost:8081/restaurants` with a valid Bearer token and confirm it now returns data (not the 500 with the PKIX stack trace).
+1. `cd ssl && ./generate-keycloak-truststore.sh` — confirm it completes with the `ca_keycloak`
+   alias and at least one public CA alias both listed by the built-in verification step.
+2. `curl --cacert "$HOME/opt/keycloak/ssl/truststore/keycloak.truststore.pem" https://raspberry01:8443/realms/windfire/.well-known/openid-configuration` — confirms the CA cert itself is valid and the chain resolves, independent of the Java changes.
+3. Run `./run-windfire-restaurants-backend.sh`, accept the new truststore password prompt (default), and confirm the app starts with no `SSLHandshakeException`/`JwtDecoderInitializationException` in the log.
+4. Call `https://localhost:8081/restaurants` with a valid Bearer token and confirm it now returns data (not the 500 with the PKIX stack trace). This step exercises **both** trust paths, not just Keycloak: the token validation needs Keycloak's CA, and `/restaurants` itself reads from MongoDB Atlas, so a real data response also proves the merged truststore still trusts Mongo's TLS handshake.
+
+If step 4 fails, check the exception's target host in the stack trace (`raspberry01:8443` vs
+`windfire.rxdd4.mongodb.net`) to tell a remaining Keycloak-trust gap apart from a Mongo-trust
+regression from the merge.

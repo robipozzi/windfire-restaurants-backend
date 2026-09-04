@@ -22,10 +22,14 @@ main()
 	export KEYCLOAK_SERVER=$KEYCLOAK_HOST
 	export KEYCLOAK_SERVER_PORT=$KEYCLOAK_PORT
 	export HOME_DIR=$HOME
+	inputKeycloakTruststorePassword
+	export KEYCLOAK_TRUSTSTORE_PWD=$KEYCLOAK_TRUSTSTORE_PWD
 	inputMongoDBPassword
 	export MONGODB_PASSWORD=$MONGODB_PWD
 	java -version
-	java -jar target/$JAR_NAME-$VERSION.jar &
+	java -Djavax.net.ssl.trustStore=$DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_TRUSTSTORE \
+	     -Djavax.net.ssl.trustStorePassword=$KEYCLOAK_TRUSTSTORE_PWD \
+	     -jar target/$JAR_NAME-$VERSION.jar &
 }
 
 inputKeycloakServer()
@@ -43,6 +47,15 @@ inputKeycloakServerPort()
 	read KEYCLOAK_PORT
 	if [ "$KEYCLOAK_PORT" == "" ]; then
 		KEYCLOAK_PORT=$DEFAULT_KEYCLOAK_PORT
+    fi
+}
+
+inputKeycloakTruststorePassword()
+{
+	echo ${cyn}Input Keycloak client truststore password - leaving blank will set truststore password to ${end}${mag}$DEFAULT_KEYCLOAK_TRUSTSTORE_PWD : ${end}
+	read KEYCLOAK_TRUSTSTORE_PWD
+	if [ "$KEYCLOAK_TRUSTSTORE_PWD" == "" ]; then
+		KEYCLOAK_TRUSTSTORE_PWD=$DEFAULT_KEYCLOAK_TRUSTSTORE_PWD
     fi
 }
 

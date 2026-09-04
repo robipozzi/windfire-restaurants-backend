@@ -62,6 +62,7 @@ RASPBERRY_KEYSTORE_DIR=$WINDFIRE_SSL_DIR/keystore/raspberry
 DEFAULT_KEYCLOAK_TRUSTSTORE_DIR=$HOME/opt/keycloak/ssl/truststore
 DEFAULT_KEYCLOAK_CACERT_PEM=keycloak.truststore.pem
 DEFAULT_KEYCLOAK_TRUSTSTORE=keycloak.truststore.jks
+DEFAULT_KEYCLOAK_TRUSTSTORE_PWD=changeit
 ####################################
 ###### Variable section - END ######
 ####################################
