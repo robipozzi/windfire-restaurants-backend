@@ -96,7 +96,7 @@ inputKeycloakTruststorePassword()
 {
 	KEYCLOAK_TRUSTSTORE_PWD=
 	while [ "$KEYCLOAK_TRUSTSTORE_PWD" == "" ]; do
-		echo ${cyn}Input Keycloak client truststore password : ${end}
+		echo ${cyn}Input Keycloak client truststore password - leaving blank will set truststore password to ${end}${mag}[***DEFAULT KEYCLOAK TRUSTSTORE PWD***] : ${end}
 		read -s KEYCLOAK_TRUSTSTORE_PWD
 		echo
 		if [ "$KEYCLOAK_TRUSTSTORE_PWD" == "" ]; then
