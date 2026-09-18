@@ -100,7 +100,7 @@ inputKeycloakTruststorePassword()
 		read -s KEYCLOAK_TRUSTSTORE_PWD
 		echo
 		if [ "$KEYCLOAK_TRUSTSTORE_PWD" == "" ]; then
-			echo ${red}Keycloak client truststore password cannot be blank${end}
+			KEYCLOAK_TRUSTSTORE_PWD=$DEFAULT_KEYCLOAK_TRUSTSTORE_PWD
 		fi
 	done
 }
@@ -136,7 +136,7 @@ deployRaspberry()
 	checkSSLCertificates
 	checkKeycloakTruststore
 	collectSecrets
-	ansible-playbook deployment/raspberry/windfire-restaurants.yaml
+	#ansible-playbook deployment/raspberry/windfire-restaurants.yaml
 }
 
 # ***** Function section - END
