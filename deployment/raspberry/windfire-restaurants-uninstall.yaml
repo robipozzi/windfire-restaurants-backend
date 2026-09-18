@@ -1,6 +1,6 @@
 --- # Ansible Playbook to configure a set of Raspberry PIs in a consistent and repeatable way
 # Software installation and configuration for Raspberry PI box
-- hosts: raspberry_identitymanager
+- hosts: appserver
   remote_user: "{{ user }}"
   become: yes
   vars:
@@ -12,9 +12,19 @@
     ##############################################################
     ##### Windfire Restaurants backend stop application task #####
     ##############################################################
-    - name: Stop Windfire Restaurants backend application if running
-      command: pkill -f "{{ windfirerestaurants_app_jar }}"
+    - name: Stop and disable Windfire Restaurants backend service if running
+      systemd:
+        name: windfire-restaurants-backend
+        state: stopped
+        enabled: no
       ignore_errors: yes
+    - name: Remove Windfire Restaurants backend systemd unit file
+      file:
+        path: /etc/systemd/system/windfire-restaurants-backend.service
+        state: absent
+    - name: Reload systemd after removing unit file
+      systemd:
+        daemon_reload: yes
     ##############################################################
     ##### Windfire Restaurants backend un-deployment section #####
     ##############################################################

@@ -1,14 +1,18 @@
 user: pi
 group: pi
 remote_home_dir: /home/pi
+local_home_dir: /Users/robertopozzi
 remote_windfirerestaurants_dir: "{{ remote_home_dir }}/windfire-restaurants"
 remote_windfirerestaurants_run_target_dir: "{{ remote_windfirerestaurants_dir }}/target"
 windfirerestaurants_app_jar: windfire-restaurants-backend-0.0.1-SNAPSHOT.jar
 windfirerestaurants_launch_script: run-windfire-restaurants-backend.sh
 setenv_script: setenv.sh
-local_windfirerestaurants_certs_dir: "/Users/robertopozzi/opt/windfire/ssl/certs/raspberry"
-local_windfirerestaurants_keystore_dir: "/Users/robertopozzi/opt/windfire/ssl/keystore/raspberry"
+local_windfirerestaurants_certs_dir: "{{ local_home_dir }}/opt/windfire/ssl/certs/raspberry"
+local_windfirerestaurants_keystore_dir: "{{ local_home_dir }}/opt/windfire/ssl/keystore/raspberry"
 remote_windfirerestaurants_certs_dir: "{{ remote_home_dir }}/opt/windfire/ssl/certs"
 remote_windfirerestaurants_keystore_dir: "{{ remote_home_dir }}/opt/windfire/ssl/keystore"
 remote_windfirerestaurants_certificate: "windfire-restaurants-backend.crt"
 remote_windfirerestaurants_key: "windfire-restaurants-backend.key"
+local_keycloak_truststore_dir: "{{ local_home_dir }}/opt/keycloak/ssl/truststore"
+remote_keycloak_truststore_dir: "{{ remote_home_dir }}/opt/keycloak/ssl/truststore"
+keycloak_truststore_file: "keycloak.truststore.jks"

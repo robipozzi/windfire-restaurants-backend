@@ -3,10 +3,13 @@
 - hosts: appserver
   remote_user: "{{ user }}"
   become: yes
-  become_user: "{{ user }}"
   vars:
     src_dir: "{{ playbook_dir }}"
     mode: u=rwx
+    keycloak_server: "{{ lookup('env', 'KEYCLOAK_SERVER') }}"
+    keycloak_server_port: "{{ lookup('env', 'KEYCLOAK_SERVER_PORT') }}"
+    keycloak_truststore_pwd: "{{ lookup('env', 'KEYCLOAK_TRUSTSTORE_PWD') }}"
+    mongodb_password: "{{ lookup('env', 'MONGODB_PASSWORD') }}"
   vars_files:
     - "{{ src_dir }}/conf/config.yml"
   tasks:
@@ -14,7 +17,10 @@
     ##### Windfire Restaurants backend stop application task #####
     ##############################################################
     - name: Stop Windfire Restaurants backend application if running
-      command: pkill -f "{{ windfirerestaurants_app_jar }}"
+      ansible.builtin.systemd:
+        name: windfire-restaurants-backend
+        state: stopped
+      failed_when: false
       ignore_errors: yes
     ###########################################################
     ##### Windfire Restaurants backend deployment section #####
@@ -77,3 +83,77 @@
         owner: "{{ user }}"
         group: "{{ group }}"
         mode: "0600"
+    #########################################################
+    ##### Keycloak client truststore deployment section #####
+    #########################################################
+    - name: Ensure remote Keycloak truststore directory exists
+      file:
+        path: "{{ remote_keycloak_truststore_dir }}"
+        state: directory
+    - name: Copy Keycloak client truststore "{{ keycloak_truststore_file }}" to remote server
+      copy:
+        src: "{{ local_keycloak_truststore_dir }}/{{ keycloak_truststore_file }}"
+        dest: "{{ remote_keycloak_truststore_dir }}/{{ keycloak_truststore_file }}"
+        owner: "{{ user }}"
+        group: "{{ group }}"
+        mode: "0600"
+    ################################################################
+    ##### Windfire Restaurants backend systemd service section #####
+    ################################################################
+    - name: Ensure "{{ remote_windfirerestaurants_dir }}/logs" remote directory exists
+      file:
+        path: "{{ remote_windfirerestaurants_dir }}/logs"
+        state: directory
+    - name: Template Windfire Restaurants backend environment file
+      template:
+        src: "{{ src_dir }}/templates/windfire-restaurants-backend.env.j2"
+        dest: "{{ remote_windfirerestaurants_dir }}/windfire-restaurants-backend.env"
+        owner: "{{ user }}"
+        group: "{{ group }}"
+        mode: "0600"
+    ####################################################################
+    ##### Windfire Restaurants backend secrets (systemd-creds) section #####
+    ####################################################################
+    - name: Build plaintext secrets blob for systemd-creds (never written to disk)
+      set_fact:
+        windfire_secrets_blob: |
+          MONGODB_PASSWORD={{ mongodb_password }}
+          KEYCLOAK_TRUSTSTORE_PWD={{ keycloak_truststore_pwd }}
+      no_log: true
+    - name: Ensure /etc/credstore.encrypted directory exists
+      file:
+        path: /etc/credstore.encrypted
+        state: directory
+        owner: root
+        group: root
+        mode: "0700"
+    - name: Remove previous encrypted secrets credential, if any
+      file:
+        path: /etc/credstore.encrypted/windfire-restaurants-backend-secrets
+        state: absent
+    - name: Encrypt Windfire Restaurants backend secrets with systemd-creds
+      command:
+        cmd: systemd-creds encrypt --name=windfire-restaurants-backend-secrets --with-key=host - /etc/credstore.encrypted/windfire-restaurants-backend-secrets
+        stdin: "{{ windfire_secrets_blob }}"
+      no_log: true
+      notify: reload systemd
+    - name: Template Windfire Restaurants backend systemd unit
+      template:
+        src: "{{ src_dir }}/templates/windfire-restaurants-backend.service.j2"
+        dest: "/etc/systemd/system/windfire-restaurants-backend.service"
+      notify: reload systemd
+    - name: Reload systemd and start Windfire Restaurants backend service
+      systemd:
+        daemon_reload: yes
+        name: windfire-restaurants-backend
+        state: started
+        enabled: yes
+    - name: Verify Windfire Restaurants backend is listening on port 8081
+      wait_for:
+        port: 8081
+        host: 127.0.0.1
+        timeout: 30
+  handlers:
+    - name: reload systemd
+      systemd:
+        daemon_reload: yes
