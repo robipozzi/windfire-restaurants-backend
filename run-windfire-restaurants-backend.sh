@@ -52,8 +52,9 @@ inputKeycloakServerPort()
 
 inputKeycloakTruststorePassword()
 {
-	echo ${cyn}Input Keycloak client truststore password - leaving blank will set truststore password to ${end}${mag}$DEFAULT_KEYCLOAK_TRUSTSTORE_PWD : ${end}
-	read KEYCLOAK_TRUSTSTORE_PWD
+	echo ${cyn}Input Keycloak client truststore password - leaving blank will set truststore password to ${end}${mag}[***DEFAULT KEYCLOAK TRUSTSTORE PWD***] : ${end}
+	read -s KEYCLOAK_TRUSTSTORE_PWD
+	echo
 	if [ "$KEYCLOAK_TRUSTSTORE_PWD" == "" ]; then
 		KEYCLOAK_TRUSTSTORE_PWD=$DEFAULT_KEYCLOAK_TRUSTSTORE_PWD
     fi
