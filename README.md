@@ -4,7 +4,13 @@
 - [Introduction](#introduction)
 - [Requirements](#requirements)
 - [Run](#run)
+    - [Stop the application](#stop-the-application)
+- [Deploy to Raspberry Pi](#deploy-to-raspberry-pi)
 - [How the application works](#how-the-application-works)
+    - [Layered architecture](#layered-architecture)
+    - [REST API](#rest-api)
+    - [API documentation with Swagger UI / OpenAPI](#api-documentation-with-swagger-ui--openapi)
+    - [Data persistence with MongoDB](#data-persistence-with-mongodb)
     - [Implementing OAuth2 Authentication with Keycloak](#implementing-oauth2-authentication-with-keycloak)
     - [TLS configuration](#tls-configuration)
     - [Keycloak client trust (outbound TLS)](#keycloak-client-trust-outbound-tls)
@@ -12,12 +18,13 @@
 
 ## Introduction
 This repository holds the code for Windfire Restaurants application backend services. It also provides scripts to facilitate
-the build and run of the application.
+the build, run and deployment of the application.
 
-Windfire Restaurants Backend implements and expose a REST service and is based and developed on Spring Boot.
+Windfire Restaurants Backend implements and exposes a REST service, based and developed on Spring Boot, that manages
+restaurant records stored in MongoDB.
 
-This version implements OAuth2 authorization (using Keycloak as the Authorization Server) and uses TLS certificate to encrypt
-the traffic.
+This version implements OAuth2 authorization (using Keycloak as the Authorization Server), uses a TLS certificate to encrypt
+the traffic, and documents itself through a Swagger UI / OpenAPI endpoint.
 
 The architecture of the application is depicted in the following picture.
 
@@ -28,6 +35,8 @@ To build and run the application, following minimal software needs to be availab
 
 * [Maven](https://maven.apache.org/install.html)
 * Java 17: Any compliant JVM should work.
+* Access to a MongoDB instance (the application is configured out of the box to connect to a MongoDB Atlas cluster, see
+[Data persistence with MongoDB](#data-persistence-with-mongodb)).
 
 ## Run
 Once requirements are met, one can build and run the application with the following:
@@ -36,48 +45,102 @@ Once requirements are met, one can build and run the application with the follow
 
 A convenient script **[build.sh](build.sh)** is provided to build the application from source code.
 
-Another script **[run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh)** is provided to run the application, once it has been built. Before running it for the first time, see [Keycloak client trust (outbound TLS)](#keycloak-client-trust-outbound-tls) for a one-time truststore setup step it now depends on.
+Another script **[run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh)** is provided to run the application, once it has been built. It interactively prompts for the Keycloak server host/port, the Keycloak client truststore password and the MongoDB password, exports them as environment variables consumed by **[application.properties](src/main/resources/application.properties)**, and starts the JVM in the background. Before running it for the first time, see [Keycloak client trust (outbound TLS)](#keycloak-client-trust-outbound-tls) for a one-time truststore setup step it depends on.
+
+### Stop the application
+**[stop-windfire-restaurants-backend.sh](stop-windfire-restaurants-backend.sh)** looks up the running `windfire-restaurants-backend` process, sends it a graceful `kill`, waits up to 10 seconds for it to shut down, and force-kills it (`kill -9`) if it hasn't stopped by then.
+
+## Deploy to Raspberry Pi
+The application can be fully built, packaged and deployed to a Raspberry Pi (`raspberry02`) as a supervised `systemd` service with a single command:
+
+```bash
+./deploy.sh
+```
+
+**[deploy.sh](deploy.sh)** orchestrates the whole chain:
+1. Prompts for the target platform (currently only `1. Raspberry` is available).
+2. Builds the application from source (`./build.sh 4`, i.e. `mvn clean install`).
+3. Generates the TLS server certificate/key for the `raspberry` environment if not already present, via **[ssl/generate-ssl-cert.sh](ssl/generate-ssl-cert.sh)**.
+4. Generates the Keycloak client truststore if not already present, via **[ssl/generate-keycloak-truststore.sh](ssl/generate-keycloak-truststore.sh)**.
+5. Prompts once for the Keycloak host/port, the Keycloak truststore password and the MongoDB password, and exports them as environment variables.
+6. Runs the Ansible playbook **[deployment/raspberry/windfire-restaurants.yaml](deployment/raspberry/windfire-restaurants.yaml)**, which:
+   - stops any previously running `windfire-restaurants-backend` systemd service;
+   - copies the application jar, launch scripts, TLS certificate/key and Keycloak client truststore to the Pi;
+   - templates the environment file and a `windfire-restaurants-backend.service` systemd unit (**[templates/windfire-restaurants-backend.service.j2](deployment/raspberry/templates/windfire-restaurants-backend.service.j2)**, **[templates/windfire-restaurants-backend.env.j2](deployment/raspberry/templates/windfire-restaurants-backend.env.j2)**);
+   - encrypts the Keycloak truststore password and MongoDB password at rest on the Pi using `systemd-creds`, so they never sit in plaintext on disk, and wires them into the service via `LoadCredentialEncrypted`;
+   - reloads `systemd`, starts and enables the service, and finally verifies the application is listening on port `8081`.
+
+Deployment configuration (remote paths, users, file names, etc.) lives in **[deployment/raspberry/conf/config.yml](deployment/raspberry/conf/config.yml)**.
+
+To remove the application from the Pi, run the companion uninstall playbook:
+```bash
+ansible-playbook deployment/raspberry/windfire-restaurants-uninstall.yaml
+```
+which stops and disables the systemd service, removes its unit file, and deletes the deployed application directory.
 
 ## How the application works
-The application implements a REST service, using Spring Boot construct, i.e. simply tagging a class as **@RestController**, as 
-it can be seen in **RestaurantRESTService** here following
 
-```
+### Layered architecture
+Each domain (e.g. restaurants) is organized in a small DAO / business-service layering, built on top of generic base classes:
+- **[IDao](src/main/java/com/rpozzi/windfire/common/dao/IDao.java)** / **[ADao](src/main/java/com/rpozzi/windfire/common/dao/ADao.java)**: generic CRUD contract (`findAll`, `findById`, `save`, `deleteById`) that concrete DAOs implement.
+- **[RestaurantDao](src/main/java/com/rpozzi/windfire/restaurants/entities/RestaurantDao.java)**: implements `ADao<Restaurant>` by delegating to **[IRestaurantRepository](src/main/java/com/rpozzi/windfire/restaurants/entities/IRestaurantRepository.java)**, a Spring Data `MongoRepository`.
+- **[IBusinessService](src/main/java/com/rpozzi/windfire/common/service/IBusinessService.java)** / **[ABusinessService](src/main/java/com/rpozzi/windfire/common/service/ABusinessService.java)**: generic base business-service holding a reference to the DAO.
+- **[RestaurantService](src/main/java/com/rpozzi/windfire/restaurants/service/RestaurantService.java)**: extends `ABusinessService<Restaurant>` and exposes the restaurant-specific business operations used by the REST controller.
+- **[RestaurantRESTService](src/main/java/com/rpozzi/windfire/restaurants/service/RestaurantRESTService.java)**: the `@RestController` that exposes the operations over HTTP.
+
+The **[Restaurant](src/main/java/com/rpozzi/windfire/restaurants/entities/Restaurant.java)** entity (with an embedded **[Address](src/main/java/com/rpozzi/windfire/restaurants/entities/Address.java)**) is persisted as a `restaurants` MongoDB document.
+
+### REST API
+The application implements a REST service, using Spring Boot construct, i.e. simply tagging a class as **@RestController**, as
+it can be seen in **[RestaurantRESTService](src/main/java/com/rpozzi/windfire/restaurants/service/RestaurantRESTService.java)** here following (Swagger/OpenAPI annotations omitted for brevity, see [API documentation with Swagger UI / OpenAPI](#api-documentation-with-swagger-ui--openapi))
+
+```java
 @RestController
+@Tag(name = "Restaurants", description = "Operations for managing restaurants")
 public class RestaurantRESTService {
-	private static final Logger logger = LoggerFactory.getLogger(RestaurantRESTService.class);
 	@Autowired
-	private RestaurantDao restaurantDao;
+	private RestaurantService restaurantService;
 
-	/*
-	 * REST service that returns all restaurants 
-	 * GET is the only method allowed
-	 */
 	@GetMapping("/restaurants")
+	@CrossOrigin
 	public Iterable<Restaurant> findAllRestaurants() {
-		logger.info("GET /restaurants");
-		Iterable<Restaurant> restaurants = restaurantDao.findAll();
-		return restaurants;
+		return restaurantService.findAllRestaurants();
 	}
-	
-	/*
-	 * REST service that creates a new restaurant in database 
-	 * POST is the only method allowed
-	 */
+
+	@GetMapping("/restaurants/{id}")
+	@CrossOrigin
+	public Restaurant findRestaurantById(@PathVariable String id) {
+		return restaurantService.findRestaurantById(id);
+	}
+
 	@PostMapping("/restaurants")
+	@CrossOrigin
 	public Restaurant addRestaurant(@RequestBody Restaurant restaurant) {
-		logger.info("POST /restaurants");
-		Restaurant newRestaurant = restaurantDao.save(restaurant);
-		return newRestaurant;
+		return restaurantService.addRestaurant(restaurant);
+	}
+
+	@DeleteMapping("/restaurants/{id}")
+	@CrossOrigin
+	public void removeRestaurant(@PathVariable String id) {
+		Restaurant restaurant = new Restaurant();
+		restaurant.setId(id);
+		restaurantService.removeRestaurant(restaurant);
 	}
 
 }
 ```
 
+| Method | Path | Description |
+|---|---|---|
+| GET | `/restaurants` | Returns the list of all restaurants |
+| GET | `/restaurants/{id}` | Returns a single restaurant identified by its ID |
+| POST | `/restaurants` | Adds a new restaurant to the database |
+| DELETE | `/restaurants/{id}` | Removes a restaurant from the database by its ID |
+
 As said in the introduction, the code for this application is based on:
 - **Maven**: here is the **[POM](pom.xml)** that defines project configuration; the library dependencies section is reported here below
 
-```
+```xml
 <dependencies>
 	<dependency>
 		<groupId>org.springframework.boot</groupId>
@@ -91,6 +154,10 @@ As said in the introduction, the code for this application is based on:
 	<!-- ############# END - ENABLE OAUTH2 SECURITY ############# -->
 	<dependency>
 		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-data-mongodb</artifactId>
+	</dependency>
+	<dependency>
+		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-actuator</artifactId>
 	</dependency>
 	<dependency>
@@ -98,12 +165,18 @@ As said in the introduction, the code for this application is based on:
 		<artifactId>spring-boot-starter-test</artifactId>
 		<scope>test</scope>
 	</dependency>
+	<!-- ############# START - SWAGGER UI / OPENAPI ############# -->
+	<dependency>
+		<groupId>org.springdoc</groupId>
+		<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+	</dependency>
+	<!-- ############# END - SWAGGER UI / OPENAPI ############# -->
 </dependencies>
 ```
 
 - **Spring Boot 3.2.1**: the usage of Spring Boot framework v3.2.1, with all its implicit dependencies, is declared in the same **[POM](pom.xml)**; as any Spring Boot application, it has a specific configuration file called **[application.properties](src/main/resources/application.properties)**
 
-```
+```xml
 <parent>
 	<groupId>org.springframework.boot</groupId>
 	<artifactId>spring-boot-starter-parent</artifactId>
@@ -116,10 +189,10 @@ As said in the introduction, the code for this application is based on:
 specific role in OAuth2 protocol, as specified in *https://datatracker.ietf.org/doc/html/rfc6749#section-1.1*); OAuth2 behavior
 is injected as Spring dependencies, as it can be seen in the **[POM](pom.xml)** dependencies section.
 
-Every Spring Boot application needs to have a main class annotated as **@SpringBootApplication**; our application main class is 
+Every Spring Boot application needs to have a main class annotated as **@SpringBootApplication**; our application main class is
 **[WindfireApplication](src/main/java/com/rpozzi/windfire/application/WindfireApplication.java)**, whose code is reported here below for reference
 
-```
+```java
 @SpringBootApplication
 @ComponentScan(basePackages = "com.rpozzi.windfire")
 public class WindfireApplication {
@@ -139,6 +212,30 @@ public class WindfireApplication {
 }
 ```
 
+### API documentation with Swagger UI / OpenAPI
+The REST API is self-documented via [springdoc-openapi](https://springdoc.org/), configured in **[OpenApiConfig](src/main/java/com/rpozzi/windfire/config/OpenApiConfig.java)** (API title/description and a `bearerAuth` HTTP Bearer/JWT security scheme) and exposed through the paths configured in **[application.properties](src/main/resources/application.properties)**:
+
+```
+springdoc.api-docs.path=/v3/api-docs
+springdoc.swagger-ui.path=/swagger-ui.html
+springdoc.swagger-ui.operationsSorter=method
+```
+
+Once the application is running, the interactive Swagger UI is available at `/swagger-ui.html` and the raw OpenAPI document at `/v3/api-docs`. Both paths are explicitly whitelisted in **[SecurityConfig](src/main/java/com/rpozzi/windfire/security/SecurityConfig.java)** so they can be reached without an OAuth2 Bearer token, while every other endpoint (e.g. `/restaurants`) still requires authentication - Swagger UI lets you supply a Bearer token via the "Authorize" button to call those protected endpoints interactively.
+
+### Data persistence with MongoDB
+Restaurants are persisted in MongoDB using Spring Data MongoDB. **[Restaurant](src/main/java/com/rpozzi/windfire/restaurants/entities/Restaurant.java)** is annotated as a `@Document("restaurants")`, and **[IRestaurantRepository](src/main/java/com/rpozzi/windfire/restaurants/entities/IRestaurantRepository.java)** extends Spring Data's `MongoRepository<Restaurant, String>` to get CRUD operations for free; **[RestaurantDao](src/main/java/com/rpozzi/windfire/restaurants/entities/RestaurantDao.java)** wraps that repository behind the generic `IDao` contract described in [Layered architecture](#layered-architecture).
+
+The MongoDB connection is configured in **[application.properties](src/main/resources/application.properties)**:
+
+```
+### MongoDb Data source configuration
+spring.data.mongodb.uri=mongodb+srv://mongodb:${MONGODB_PASSWORD}@windfire.rxdd4.mongodb.net/restaurants
+spring.data.mongodb.database=restaurants
+```
+
+The connection string points to a MongoDB Atlas cluster; the `${MONGODB_PASSWORD}` placeholder is resolved from the `MONGODB_PASSWORD` environment variable, which is supplied either interactively by **[run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh)** when running locally, or via the encrypted systemd credential when [deployed to Raspberry Pi](#deploy-to-raspberry-pi).
+
 ### Implementing OAuth2 Authentication with Keycloak
 Keycloak is an Open Source Identity and Access Management technology that allows to add authentication mechanisms to applications, securing them with minimum effort.
 
@@ -150,14 +247,38 @@ Once Keycloak is up and running, **spring.security.oauth2.resourceserver.jwt.iss
 
 ```
 ### Security configuration
-spring.security.oauth2.resourceserver.jwt.issuer-uri=https://localhost:8443/realms/windfire-restaurants
+spring.security.oauth2.resourceserver.jwt.issuer-uri=https://${KEYCLOAK_SERVER}:${KEYCLOAK_SERVER_PORT}/realms/windfire
 ```
 
-This is really all is needed when using Spring Boot, everything is automatically wired up and the REST service is now protected under OAuth2 authentication; 
+Access control is centralized in **[SecurityConfig](src/main/java/com/rpozzi/windfire/security/SecurityConfig.java)**: it whitelists the Swagger UI/OpenAPI paths and requires an authenticated (JWT Bearer) request for everything else.
+
+```java
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+	@Autowired
+    private CustomAuthenticationEntryPoint authenticationEntryPoint;
+
+    @Bean
+    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+		http.authorizeHttpRequests((authorize) -> authorize
+				.requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+				.anyRequest().authenticated())
+			.oauth2ResourceServer((oauth2) -> oauth2.jwt(Customizer.withDefaults())
+			.authenticationEntryPoint(authenticationEntryPoint)
+		);
+		return http.build();
+	}
+
+}
+```
+
+This is really all is needed when using Spring Boot, everything is automatically wired up and the REST service is now protected under OAuth2 authentication;
 
 Let's do a small step forward and implement a simple error handling, returning a specific messages to a REST client, in case the client is not authenticated. To implement such behavior, a custom *AuthenticationEntryPoint* (it is an interface provided by Spring Security framework) needs to be implemented. The following code (implemented in  **[CustomAuthenticationEntryPoint](src/main/java/com/rpozzi/windfire/security/CustomAuthenticationEntryPoint.java)**) is quite straightforward, it just returns a JSON formatted response with an appropriate error message.
 
-```
+```java
 @Component
 public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
@@ -191,7 +312,7 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
 ```
 
 ### TLS configuration
-Enabling TLS on a Spring Boot REST service with a certificate signed by a Certificate Authority (CA) involves a few steps, refer to the following article *[Building robust APIs: a comprehensive guide to OAuth2 and TLS integration in REST services - Part 3](https://medium.com/@robertopozzi/building-robust-apis-a-comprehensive-guide-to-oauth2-and-ssl-integration-in-rest-services-part-2-44213d2e3e62)* for step by step instructions.
+Enabling TLS on a Spring Boot REST service with a certificate signed by a Certificate Authority (CA) involves a few steps, refer to the following article *[Building robust APIs: a comprehensive guide to OAuth2 and TLS integration in REST services - Part 3](https://medium.com/@robertopozzi/building-robust-apis-a-comprehensive-guide-to-oauth2-and-ssl-integration-in-rest-services-part-2-44213d2e3e62)* for step by step instructions.
 
 The server certificate is signed by a self-signed Windfire Root Certification Authority, generated once via the sibling **[windfire-security/ssl/createRootCA.sh](https://github.com/robipozzi/windfire-security/blob/main/ssl/createRootCA.sh)** script, which places the Root CA certificate in `$HOME/opt/windfire/ssl/truststore` and its private key in `$HOME/opt/windfire/ssl/keystore`.
 
@@ -256,12 +377,16 @@ cd ssl
 This is a one-time/local setup step whose *output* (the `.jks` file) is not tracked in git — only the
 script that produces it lives in the repository.
 
-**[run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh)** now also prompts for the
+**[run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh)** prompts for the
 truststore password, defaulting to `DEFAULT_KEYCLOAK_TRUSTSTORE_PWD` from **[setenv.sh](setenv.sh)**,
 and passes it to the JVM via `-Djavax.net.ssl.trustStorePassword` alongside
-`-Djavax.net.ssl.trustStore`.
+`-Djavax.net.ssl.trustStore`. When [deployed to Raspberry Pi](#deploy-to-raspberry-pi), the same
+truststore and password are instead delivered to the `systemd` service via an encrypted
+`systemd-creds` credential.
 
 ### Test the application
 Two scripts are provided to test the application
 - **[requestKeycloakToken.sh](test/requestKeycloakToken.sh)** script allows to authenticate to Keycloak and get an Authorization Bearer token that can then be used to access the REST service.
 - **[getRestaurants.sh](test/getRestaurants.sh)** script allows to call the REST service passing the Authorization Bearer token returned by Keycloak to ensure the client is authenticated.
+
+Alternatively, once the application is running, the [Swagger UI](#api-documentation-with-swagger-ui--openapi) at `/swagger-ui.html` can be used to explore and call every endpoint interactively, supplying the Bearer token obtained from `requestKeycloakToken.sh` via its "Authorize" button.
