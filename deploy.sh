@@ -136,7 +136,7 @@ deployRaspberry()
 	checkSSLCertificates
 	checkKeycloakTruststore
 	collectSecrets
-	#ansible-playbook deployment/raspberry/windfire-restaurants.yaml
+	ansible-playbook deployment/raspberry/windfire-restaurants.yaml
 }
 
 # ***** Function section - END
