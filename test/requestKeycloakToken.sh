@@ -36,7 +36,7 @@ printChoosePlatform()
 {
 	echo ${grn}Select Keycloak platform to test: ${end}
     echo "${grn}1. Keycloak Server (No TLS enabled)${end}"
-	echo "${grn}2. Keycloak Server (TLS enabled with self signed certificate)${end}"
+	echo "${grn}2. Keycloak Server (TLS enabled, certificate signed by Windfire Keycloak Root CA)${end}"
 	read PLATFORM_OPTION
 	setFunction
 }
@@ -49,7 +49,7 @@ setFunction()
 		2)  FUNCTION=curlSelfSignedTLS
 			;;
 		*) 	echo ${red}No valid option selected${end}
-			printChooseFunction
+			printChoosePlatform
 			;;
 	esac
 }
@@ -67,16 +67,16 @@ curlNoTLS()
 
 curlSelfSignedTLS()
 {
-	CURL="curl -X POST https://$KEYCLOAK_HOST:$KEYCLOAK_TLS_SERVER_PORT/realms/$REALM_ID/protocol/openid-connect/token"
+	CURL="curl -X POST https://$KEYCLOAK_HOST:$KEYCLOAK_PORT/realms/$REALM_ID/protocol/openid-connect/token"
 	echo ${blu}Running $CURL ...${end}
 	
 	#####################################################
 	##### it calls Keycloak using the following		#####
-	##### $HOME/opt/keycloak/ssl/ca_keycloak.pem	#####
+	##### Windfire Keycloak Root CA certificate		#####
 	#####################################################
 	
 	$CURL \
-	    --cacert $DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_CACERT_PEM \
+	    --cacert $DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_ROOT_CA_CERTIFICATE \
 		-H "Accept: application/json" \
 		-H "Content-Type: application/x-www-form-urlencoded" \
 		-H "cache-control: no-cache" \

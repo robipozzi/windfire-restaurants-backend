@@ -64,14 +64,8 @@ checkKeycloakTruststore()
     echo ${blu}***** Check Keycloak client truststore *****${end}
     echo ${blu}********************************************${end}
     echo
-    if [ ! -f "$DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_TRUSTSTORE" ]; then
-        echo ${yel}Keycloak client truststore not found. Generating...${end}
-        echo
-        (cd ssl && ./generate-keycloak-truststore.sh)
-    else
-        echo ${grn}Keycloak client truststore found in $DEFAULT_KEYCLOAK_TRUSTSTORE_DIR${end}
-    fi
-    echo
+    # Rebuilds the truststore if it is missing or does not trust the current Windfire Keycloak Root CA
+    (cd ssl && ./generate-keycloak-truststore.sh --if-stale) || { echo ${red}Error: Keycloak client truststore is not usable${end} >&2; exit 1; }
 }
 
 inputKeycloakServer()
@@ -136,7 +130,8 @@ deployRaspberry()
 	checkSSLCertificates
 	checkKeycloakTruststore
 	collectSecrets
-	ansible-playbook deployment/raspberry/windfire-restaurants.yaml
+	# sudo on raspberry02 requires pi's password: -K asks for it (BECOME password)
+	ansible-playbook -K deployment/raspberry/windfire-restaurants.yaml
 }
 
 # ***** Function section - END

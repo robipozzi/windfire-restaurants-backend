@@ -61,9 +61,9 @@ The application can be fully built, packaged and deployed to a Raspberry Pi (`ra
 1. Prompts for the target platform (currently only `1. Raspberry` is available).
 2. Builds the application from source (`./build.sh 4`, i.e. `mvn clean install`).
 3. Generates the TLS server certificate/key for the `raspberry` environment if not already present, via **[ssl/generate-ssl-cert.sh](ssl/generate-ssl-cert.sh)**.
-4. Generates the Keycloak client truststore if not already present, via **[ssl/generate-keycloak-truststore.sh](ssl/generate-keycloak-truststore.sh)**.
+4. Generates the Keycloak client truststore if it is missing or does not trust the current Windfire Keycloak Root CA, via **[ssl/generate-keycloak-truststore.sh](ssl/generate-keycloak-truststore.sh)** `--if-stale`.
 5. Prompts once for the Keycloak host/port, the Keycloak truststore password and the MongoDB password, and exports them as environment variables.
-6. Runs the Ansible playbook **[deployment/raspberry/windfire-restaurants.yaml](deployment/raspberry/windfire-restaurants.yaml)**, which:
+6. Runs the Ansible playbook (with `-K`: sudo on `raspberry02` requires `pi`'s password, typed at the `BECOME password` prompt) **[deployment/raspberry/windfire-restaurants.yaml](deployment/raspberry/windfire-restaurants.yaml)**, which:
    - stops any previously running `windfire-restaurants-backend` systemd service;
    - copies the application jar, launch scripts, TLS certificate/key and Keycloak client truststore to the Pi;
    - templates the environment file and a `windfire-restaurants-backend.service` systemd unit (**[templates/windfire-restaurants-backend.service.j2](deployment/raspberry/templates/windfire-restaurants-backend.service.j2)**, **[templates/windfire-restaurants-backend.env.j2](deployment/raspberry/templates/windfire-restaurants-backend.env.j2)**);
@@ -74,7 +74,7 @@ Deployment configuration (remote paths, users, file names, etc.) lives in **[dep
 
 To remove the application from the Pi, run the companion uninstall playbook:
 ```bash
-ansible-playbook deployment/raspberry/windfire-restaurants-uninstall.yaml
+ansible-playbook -K deployment/raspberry/windfire-restaurants-uninstall.yaml
 ```
 which stops and disables the systemd service, removes its unit file, and deletes the deployed application directory.
 
@@ -343,9 +343,12 @@ server.ssl.certificate-private-key=file:${HOME_DIR}/opt/windfire/ssl/keystore/wi
 
 ### Keycloak client trust (outbound TLS)
 The TLS configuration described just above is *inbound*: it lets clients trust this application's own
-certificate. Since Keycloak was switched to HTTPS-only, serving `https://raspberry01:8443` with a
-self-signed certificate, the application also needs *outbound* trust: when it fetches Keycloak's OIDC
-metadata to validate incoming JWTs, the JVM needs to trust Keycloak's self-signed CA too. There is no
+certificate. Keycloak is HTTPS-only, serving `https://raspberry01:8443` with a certificate signed by the
+dedicated **Windfire Keycloak Root CA** (set up by
+[windfire-security/keycloak/security/setupTLS.sh](https://github.com/robipozzi/windfire-security/blob/main/keycloak/security/setupTLS.sh),
+independent of the Windfire Root CA used for this application's own certificate), so the application also
+needs *outbound* trust: when it fetches Keycloak's OIDC metadata and JWKS to validate incoming JWTs, the
+JVM needs to trust the Windfire Keycloak Root CA too. There is no
 custom `RestTemplate`/`JwtDecoder`/`SSLContext` bean in the codebase, so this trust cannot be set as a
 Spring property — it is supplied JVM-wide via `-Djavax.net.ssl.trustStore` /
 `-Djavax.net.ssl.trustStorePassword` on the `java` invocation.
@@ -358,14 +361,16 @@ Keycloak's CA is imported into that copy.
 
 A convenient script **[generate-keycloak-truststore.sh](ssl/generate-keycloak-truststore.sh)** is
 provided to (re)build this truststore. It expects Keycloak's CA certificate to already exist at
-`$DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_CACERT_PEM` (it only rebuilds the truststore, it
-does not create the CA certificate itself), then:
+`$DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_ROOT_CA_CERTIFICATE`, i.e.
+`~/opt/keycloak/ssl/truststore/WindfireKeycloakRootCA.crt`, the **Windfire Keycloak Root CA** created by
+`windfire-security/keycloak/security/setupTLS.sh` (it only rebuilds the truststore, it does not create
+the CA certificate itself), then:
 - copies the running JDK's default `cacerts` to
   `$DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_TRUSTSTORE`, replacing any existing truststore
   there
-- imports Keycloak's CA certificate into that copy under alias `ca_keycloak`, using the password from
+- imports the Windfire Keycloak Root CA certificate into that copy under alias `windfire-keycloak-root`, using the password from
   `DEFAULT_KEYCLOAK_TRUSTSTORE_PWD` in **[setenv.sh](setenv.sh)** (`changeit` by default)
-- verifies the merge worked, by confirming both a known public CA and the new `ca_keycloak` alias are
+- verifies the merge worked, by confirming both a known public CA and the new `windfire-keycloak-root` alias are
   listed in the resulting truststore
 
 Run it once (and again whenever Keycloak's CA certificate changes) with:
@@ -373,6 +378,19 @@ Run it once (and again whenever Keycloak's CA certificate changes) with:
 cd ssl
 ./generate-keycloak-truststore.sh
 ```
+
+With `--if-stale` the script rebuilds the truststore only if it is missing or its `windfire-keycloak-root`
+entry does not have the same SHA-256 fingerprint as the current Windfire Keycloak Root CA certificate.
+Both **[run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh)** and
+**[deploy.sh](deploy.sh)** run it this way before starting/deploying the application, so a new Keycloak
+CA is picked up automatically: just make sure the new `WindfireKeycloakRootCA.crt` is in
+`~/opt/keycloak/ssl/truststore`.
+
+**Keycloak hostname:** Keycloak's server certificate only has `raspberry01` as Subject Alternative Name, so
+the Keycloak host given to the run/deploy scripts (`KEYCLOAK_SERVER`) must be exactly `raspberry01`, not an
+IP address or another name. It must also match the issuer Keycloak advertises
+(`https://raspberry01:8443/realms/windfire`), since Spring checks the token `iss` claim against
+`spring.security.oauth2.resourceserver.jwt.issuer-uri`.
 
 This is a one-time/local setup step whose *output* (the `.jks` file) is not tracked in git — only the
 script that produces it lives in the repository.

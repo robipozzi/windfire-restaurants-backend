@@ -17,6 +17,8 @@ MONGODB_PWD=
 main()
 {
 	CURRENT_DIRECTORY=$(pwd)
+	# Rebuilds the truststore if it is missing or does not trust the current Windfire Keycloak Root CA
+	(cd ssl && ./generate-keycloak-truststore.sh --if-stale) || { echo ${red}Error: Keycloak client truststore is not usable${end} >&2; exit 1; }
 	inputKeycloakServer
 	inputKeycloakServerPort
 	export KEYCLOAK_SERVER=$KEYCLOAK_HOST
