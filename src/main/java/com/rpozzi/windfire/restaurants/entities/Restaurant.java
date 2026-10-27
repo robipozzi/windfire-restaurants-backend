@@ -1,6 +1,11 @@
 package com.rpozzi.windfire.restaurants.entities;
 
 import org.springframework.data.mongodb.core.mapping.Document;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 /**
  * An entity to represent a restaurants.
@@ -8,12 +13,22 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Document("restaurants")
 public class Restaurant {
 	private String id;
+	@NotBlank
+	@Size(max = 200)
 	private String name;
+	@Valid
 	private Address address;
+	@Size(max = 50)
 	private String cuisine;
+	@Size(max = 50)
 	private String phone;
+	@Size(max = 50)
 	private String mobile;
+	@Email
+	@Size(max = 254)
 	private String email;
+	@Size(max = 2048)
+	@Pattern(regexp = "^(?i)https?://[^\\s]+$", message = "must be an http(s) URL")
 	private String website;
 	
 	

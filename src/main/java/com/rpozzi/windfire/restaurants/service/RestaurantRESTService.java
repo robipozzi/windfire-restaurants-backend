@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import com.rpozzi.windfire.restaurants.entities.Restaurant;
+import jakarta.validation.Valid;
 
 @RestController
 @Tag(name = "Restaurants", description = "Operations for managing restaurants")
@@ -70,8 +71,10 @@ public class RestaurantRESTService {
 			@io.swagger.v3.oas.annotations.parameters.RequestBody(
 					description = "Restaurant object to be created", required = true,
 					content = @Content(schema = @Schema(implementation = Restaurant.class)))
-			@RequestBody Restaurant restaurant) {
+			@Valid @RequestBody Restaurant restaurant) {
 		logger.info("POST /restaurants");
+		// Ignore any client-supplied id so a POST always inserts and never overwrites an existing document
+		restaurant.setId(null);
 		Restaurant newRestaurant = restaurantService.addRestaurant(restaurant);
 		return newRestaurant;
 	}

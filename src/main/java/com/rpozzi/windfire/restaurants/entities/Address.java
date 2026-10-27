@@ -1,11 +1,19 @@
 package com.rpozzi.windfire.restaurants.entities;
 
+import jakarta.validation.constraints.Size;
+
 public class Address {
+	@Size(max = 200)
 	private String zipCode;
+	@Size(max = 200)
 	private String city;
+	@Size(max = 200)
 	private String street;
+	@Size(max = 200)
 	private String province;
+	@Size(max = 200)
 	private String region;
+	@Size(max = 200)
 	private String country;
 	
 	public Address() {
