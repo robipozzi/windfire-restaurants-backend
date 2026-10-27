@@ -18,8 +18,12 @@ main()
 	if [ -z $MAVEN_GOAL_OPTION ]; then 
         printMavenGoals
     fi
-	java -version
-	
+	# Homebrew mvn defaults to the latest openjdk when JAVA_HOME is unset: pin JDK 17, the version the project targets
+	if [ -z "$JAVA_HOME" ] && [ -d /opt/homebrew/opt/openjdk@17 ]; then
+		export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
+	fi
+	mvn -v
+
 	mvn $MAVEN_GOAL
 }
 
