@@ -2,6 +2,7 @@ package com.rpozzi.windfire.security;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -22,6 +23,7 @@ import java.util.Map;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -52,7 +54,9 @@ import com.rpozzi.windfire.restaurants.service.RestaurantService;
 @ContextConfiguration(classes = { RestaurantRESTService.class, RestExceptionHandler.class, SecurityConfig.class,
 		CustomAuthenticationEntryPoint.class })
 @TestPropertySource(properties = { "spring.security.oauth2.resourceserver.jwt.issuer-uri=" + SecurityConfigTest.ISSUER,
-		"windfire.cors.allowed-origins=https://allowed.example, https://other.example" })
+		"windfire.cors.allowed-origins=https://allowed.example, https://other.example",
+		// application.properties makes Swagger public; pin the secure value so PublicSwagger can flip it
+		"windfire.swagger.public=false" })
 class SecurityConfigTest {
 
 	static final String ISSUER = "https://localhost/realms/test";
@@ -75,7 +79,7 @@ class SecurityConfigTest {
 	void delegateToHmacDecoder() {
 		NimbusJwtDecoder hmacDecoder = NimbusJwtDecoder.withSecretKey(KEY).macAlgorithm(MacAlgorithm.HS256).build();
 		hmacDecoder.setJwtValidator(SecurityConfig.jwtValidator(ISSUER, API_CLIENT_ID));
-		when(jwtDecoder.decode(anyString())).thenAnswer(invocation -> hmacDecoder.decode(invocation.getArgument(0)));
+		doAnswer(invocation -> hmacDecoder.decode(invocation.getArgument(0))).when(jwtDecoder).decode(anyString());
 	}
 
 	private static Map<String, Object> resourceAccess(String role) {
@@ -181,6 +185,37 @@ class SecurityConfigTest {
 				.andExpect(status().isOk())
 				.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "https://other.example"))
 				.andExpect(header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS));
+	}
+
+	@Test
+	void swaggerRequiresTokenWhenNotPublic() throws Exception {
+		mockMvc.perform(get("/v3/api-docs"))
+				.andExpect(status().isUnauthorized());
+	}
+
+	// springdoc is not part of the web slice, so a 404 here means the request got past security
+	@Nested
+	@TestPropertySource(properties = "windfire.swagger.public=true")
+	class PublicSwagger {
+
+		// The enclosing instance's MockMvc belongs to the outer context, where Swagger is not public
+		@Autowired
+		private MockMvc publicSwaggerMockMvc;
+
+		@Test
+		void swaggerIsReachableWithoutToken() throws Exception {
+			publicSwaggerMockMvc.perform(get("/v3/api-docs"))
+					.andExpect(status().isNotFound());
+			publicSwaggerMockMvc.perform(get("/swagger-ui/index.html"))
+					.andExpect(status().isNotFound());
+		}
+
+		@Test
+		void restaurantsStillRequireToken() throws Exception {
+			publicSwaggerMockMvc.perform(get("/restaurants"))
+					.andExpect(status().isUnauthorized());
+		}
+
 	}
 
 }
