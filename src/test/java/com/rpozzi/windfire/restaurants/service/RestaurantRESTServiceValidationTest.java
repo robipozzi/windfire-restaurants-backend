@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
@@ -38,7 +39,8 @@ import com.rpozzi.windfire.security.SecurityConfig;
 @ContextConfiguration(classes = { RestaurantRESTService.class, RestExceptionHandler.class, SecurityConfig.class,
 		CustomAuthenticationEntryPoint.class })
 // application.properties builds the issuer-uri from Keycloak env vars that are not set in tests; the JwtDecoder is mocked anyway
-@TestPropertySource(properties = "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://localhost/realms/test")
+@TestPropertySource(properties = { "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://localhost/realms/test",
+		"windfire.cors.allowed-origins=https://allowed.example" })
 class RestaurantRESTServiceValidationTest {
 
 	@Autowired
@@ -59,7 +61,7 @@ class RestaurantRESTServiceValidationTest {
 
 	@Test
 	void postWithJavascriptWebsiteIsRejected() throws Exception {
-		mockMvc.perform(post("/restaurants").with(jwt()).with(csrf())
+		mockMvc.perform(post("/restaurants").with(jwt().authorities(new SimpleGrantedAuthority("ROLE_restaurants-writer"))).with(csrf())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(restaurantJson(null, "javascript:alert(1)")))
 				.andExpect(status().isBadRequest())
@@ -75,7 +77,7 @@ class RestaurantRESTServiceValidationTest {
 	void postWithHttpsWebsitePassesValidationAndIgnoresClientId() throws Exception {
 		when(restaurantService.addRestaurant(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-		mockMvc.perform(post("/restaurants").with(jwt()).with(csrf())
+		mockMvc.perform(post("/restaurants").with(jwt().authorities(new SimpleGrantedAuthority("ROLE_restaurants-writer"))).with(csrf())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(restaurantJson("existing-id", "https://example.com")))
 				.andExpect(status().isOk());

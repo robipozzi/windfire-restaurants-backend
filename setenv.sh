@@ -31,6 +31,11 @@ DEFAULT_APPLICATION_SERVER_PORT=8081
 APPLICATION_SERVER_HOST=
 APPLICATION_SERVER_PORT=
 ## == Application server configurations - END
+## -- CORS configurations - START
+# Comma-separated list of exact origins allowed to call the API (local windfire-ui-react dev server)
+DEFAULT_CORS_ALLOWED_ORIGINS=http://localhost:3000,https://localhost:3000
+CORS_ALLOWED_ORIGINS=
+## -- CORS configurations - END
 
 # ************************************
 # ***** Spring Boot TLS settings *****

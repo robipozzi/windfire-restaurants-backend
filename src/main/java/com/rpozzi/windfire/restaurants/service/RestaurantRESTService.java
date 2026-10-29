@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,7 +34,6 @@ public class RestaurantRESTService {
 		@ApiResponse(responseCode = "401", description = "Unauthorized - missing or invalid Bearer token", content = @Content)
 	})
 	@GetMapping("/restaurants")
-	@CrossOrigin
 	public Iterable<Restaurant> findAllRestaurants() {
 		logger.info("GET /restaurants");
 		Iterable<Restaurant> restaurants = restaurantService.findAllRestaurants();
@@ -50,7 +48,6 @@ public class RestaurantRESTService {
 		@ApiResponse(responseCode = "404", description = "Restaurant not found", content = @Content)
 	})
 	@GetMapping("/restaurants/{id}")
-	@CrossOrigin
 	public Restaurant findRestaurantById(
 			@Parameter(description = "ID of the restaurant to retrieve", required = true) @PathVariable String id) {
 		logger.info("GET /restaurants/" + id);
@@ -66,7 +63,6 @@ public class RestaurantRESTService {
 		@ApiResponse(responseCode = "401", description = "Unauthorized - missing or invalid Bearer token", content = @Content)
 	})
 	@PostMapping("/restaurants")
-	@CrossOrigin
 	public Restaurant addRestaurant(
 			@io.swagger.v3.oas.annotations.parameters.RequestBody(
 					description = "Restaurant object to be created", required = true,
@@ -86,7 +82,6 @@ public class RestaurantRESTService {
 		@ApiResponse(responseCode = "404", description = "Restaurant not found", content = @Content)
 	})
 	@DeleteMapping("/restaurants/{id}")
-	@CrossOrigin
 	public void removeRestaurant(
 			@Parameter(description = "ID of the restaurant to delete", required = true) @PathVariable String id) {
 		logger.info("DELETE /restaurants/" + id);

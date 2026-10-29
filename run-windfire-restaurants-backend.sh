@@ -23,6 +23,8 @@ main()
 	inputKeycloakServerPort
 	export KEYCLOAK_SERVER=$KEYCLOAK_HOST
 	export KEYCLOAK_SERVER_PORT=$KEYCLOAK_PORT
+	inputCorsAllowedOrigins
+	export CORS_ALLOWED_ORIGINS=$CORS_ALLOWED_ORIGINS
 	export HOME_DIR=$HOME
 	inputKeycloakTruststorePassword
 	export KEYCLOAK_TRUSTSTORE_PWD=$KEYCLOAK_TRUSTSTORE_PWD
@@ -49,6 +51,15 @@ inputKeycloakServerPort()
 	read KEYCLOAK_PORT
 	if [ "$KEYCLOAK_PORT" == "" ]; then
 		KEYCLOAK_PORT=$DEFAULT_KEYCLOAK_PORT
+    fi
+}
+
+inputCorsAllowedOrigins()
+{
+	echo ${cyn}Input comma-separated CORS allowed origins - leaving blank will set CORS allowed origins to ${end}${mag}$DEFAULT_CORS_ALLOWED_ORIGINS : ${end}
+	read CORS_ALLOWED_ORIGINS
+	if [ "$CORS_ALLOWED_ORIGINS" == "" ]; then
+		CORS_ALLOWED_ORIGINS=$DEFAULT_CORS_ALLOWED_ORIGINS
     fi
 }
 
