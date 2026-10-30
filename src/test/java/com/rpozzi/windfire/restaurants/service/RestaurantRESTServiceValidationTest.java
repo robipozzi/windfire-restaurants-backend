@@ -88,4 +88,26 @@ class RestaurantRESTServiceValidationTest {
 		assertEquals("https://example.com", captor.getValue().getWebsite());
 	}
 
+
+	@Test
+	void postWithoutAddressIsRejected() throws Exception {
+		mockMvc.perform(post("/restaurants").with(jwt().authorities(new SimpleGrantedAuthority("ROLE_restaurants-writer"))).with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"name\":\"Battipalo\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.fieldErrors[0].field").value("address"));
+
+		verify(restaurantService, never()).addRestaurant(any());
+	}
+
+	@Test
+	void postWithEmptyWebsiteAndEmailFromTheUiIsAccepted() throws Exception {
+		when(restaurantService.addRestaurant(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+		mockMvc.perform(post("/restaurants").with(jwt().authorities(new SimpleGrantedAuthority("ROLE_restaurants-writer"))).with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(restaurantJson(null, "").replace("battipalo@example.com", "")))
+				.andExpect(status().isOk());
+	}
+
 }

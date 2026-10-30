@@ -36,8 +36,11 @@ public class RestaurantDao extends ADao<Restaurant> {
 		Restaurant newRestaurant = restaurantMongoDbRepo.save(restaurant);
 		logger.debug("   id = " + newRestaurant.getId());
 		logger.debug("   name = " + newRestaurant.getName());
-		logger.debug("   address = " + newRestaurant.getAddress().getStreet() + ", "
-				+ newRestaurant.getAddress().getZipCode() + " " + newRestaurant.getAddress().getCity());
+		// Runs after the save: a failure here would answer 500 for a document that was stored
+		Address address = newRestaurant.getAddress();
+		if (address != null) {
+			logger.debug("   address = " + address.getStreet() + ", " + address.getZipCode() + " " + address.getCity());
+		}
 		return newRestaurant;
 	}
 
