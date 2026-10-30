@@ -55,7 +55,7 @@ import com.rpozzi.windfire.restaurants.service.RestaurantService;
 		CustomAuthenticationEntryPoint.class })
 @TestPropertySource(properties = { "spring.security.oauth2.resourceserver.jwt.issuer-uri=" + SecurityConfigTest.ISSUER,
 		"windfire.cors.allowed-origins=https://allowed.example, https://other.example",
-		// application.properties makes Swagger public; pin the secure value so PublicSwagger can flip it
+		// Pin the secure value (also the application.properties default) so PublicSwagger can flip it
 		"windfire.swagger.public=false" })
 class SecurityConfigTest {
 
