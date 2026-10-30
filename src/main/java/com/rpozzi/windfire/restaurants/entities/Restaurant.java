@@ -4,6 +4,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
@@ -16,6 +17,7 @@ public class Restaurant {
 	@NotBlank
 	@Size(max = 200)
 	private String name;
+	@NotNull
 	@Valid
 	private Address address;
 	@Size(max = 50)
@@ -28,7 +30,8 @@ public class Restaurant {
 	@Size(max = 254)
 	private String email;
 	@Size(max = 2048)
-	@Pattern(regexp = "^(?i)https?://[^\\s]+$", message = "must be an http(s) URL")
+	// Empty is allowed: the UI sends "" when the field is left blank
+	@Pattern(regexp = "^$|^(?i)https?://[^\\s]+$", message = "must be an http(s) URL")
 	private String website;
 	
 	
