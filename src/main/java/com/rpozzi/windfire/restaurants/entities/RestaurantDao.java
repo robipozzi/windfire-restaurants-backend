@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.rpozzi.windfire.common.dao.ADao;
+import com.rpozzi.windfire.common.dao.ResourceNotFoundException;
 
 @Component
 public class RestaurantDao extends ADao<Restaurant> {
@@ -27,7 +28,7 @@ public class RestaurantDao extends ADao<Restaurant> {
 	public Restaurant findById(Object id) {
 		logger.debug("Executing " + this.getClass().getName() + ".findById(id) - id = " + id);
 		Optional<Restaurant> restaurant = restaurantMongoDbRepo.findById((String) id);
-		return restaurant.get();
+		return restaurant.orElseThrow(() -> new ResourceNotFoundException(id));
 	}
 
 	@Override
@@ -47,6 +48,10 @@ public class RestaurantDao extends ADao<Restaurant> {
 	@Override
 	public void deleteById(Object id) {
 		logger.debug("Executing " + this.getClass().getName() + ".deleteById(id) - id = " + id);
+		// MongoRepository.deleteById is a no-op for unknown ids: check first so the caller gets a 404
+		if (!restaurantMongoDbRepo.existsById((String) id)) {
+			throw new ResourceNotFoundException(id);
+		}
 		restaurantMongoDbRepo.deleteById((String) id);
 	}
 

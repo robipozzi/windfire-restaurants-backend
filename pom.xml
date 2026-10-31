@@ -50,6 +50,12 @@
 			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- Compile-time API for the console test reporter (src/test/.../testsupport) -->
+		<dependency>
+			<groupId>org.junit.platform</groupId>
+			<artifactId>junit-platform-launcher</artifactId>
+			<scope>test</scope>
+		</dependency>
 		<!-- ############# START - SWAGGER UI / OPENAPI ############# -->
 		<dependency>
 			<groupId>org.springdoc</groupId>
@@ -63,6 +69,19 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<systemPropertyVariables>
+						<!-- Keeps the console readable: the per-test report comes from ConsoleReportingListener -->
+						<spring.main.banner-mode>off</spring.main.banner-mode>
+						<!-- System properties win over the logging.level.* of application.properties -->
+						<logging.level.root>WARN</logging.level.root>
+						<logging.level.com.rpozzi.windfire>WARN</logging.level.com.rpozzi.windfire>
+					</systemPropertyVariables>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>

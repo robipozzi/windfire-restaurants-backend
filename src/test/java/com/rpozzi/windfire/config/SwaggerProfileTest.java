@@ -1,16 +1,20 @@
 package com.rpozzi.windfire.config;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import com.rpozzi.windfire.testsupport.Does;
 
 /**
  * The Raspberry deployment runs with no Spring profile, so the defaults must keep Swagger off;
  * only the dev profile turns it on.
  */
+@DisplayName("Config · Swagger switches per profile")
 class SwaggerProfileTest {
 
 	private static Properties load(String resource) throws IOException {
@@ -22,6 +26,8 @@ class SwaggerProfileTest {
 	}
 
 	@Test
+	@DisplayName("Swagger is off without a profile")
+	@Does("Reads application.properties → api-docs, swagger-ui and windfire.swagger.public are all false")
 	void swaggerIsOffWithoutProfile() throws IOException {
 		Properties defaults = load("application.properties");
 		assertEquals("false", defaults.getProperty("springdoc.api-docs.enabled"));
@@ -30,11 +36,23 @@ class SwaggerProfileTest {
 	}
 
 	@Test
+	@DisplayName("Swagger is on with the dev profile")
+	@Does("Reads application-dev.properties → api-docs, swagger-ui and windfire.swagger.public are all true")
 	void swaggerIsOnWithDevProfile() throws IOException {
 		Properties dev = load("application-dev.properties");
 		assertEquals("true", dev.getProperty("springdoc.api-docs.enabled"));
 		assertEquals("true", dev.getProperty("springdoc.swagger-ui.enabled"));
 		assertEquals("true", dev.getProperty("windfire.swagger.public"));
+	}
+
+	@Test
+	@DisplayName("The prod profile does not turn Swagger on")
+	@Does("Reads application-prod.properties → none of the Swagger switches is set to true (defaults stay off)")
+	void swaggerStaysOffWithProdProfile() throws IOException {
+		Properties prod = load("application-prod.properties");
+		assertNotEquals("true", prod.getProperty("springdoc.api-docs.enabled"));
+		assertNotEquals("true", prod.getProperty("springdoc.swagger-ui.enabled"));
+		assertNotEquals("true", prod.getProperty("windfire.swagger.public"));
 	}
 
 }

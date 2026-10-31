@@ -405,8 +405,73 @@ truststore and password are instead delivered to the `systemd` service via an en
 `systemd-creds` credential.
 
 ### Test the application
-Two scripts are provided to test the application
-- **[requestKeycloakToken.sh](test/requestKeycloakToken.sh)** script allows to authenticate to Keycloak and get an Authorization Bearer token that can then be used to access the REST service.
-- **[getRestaurants.sh](test/getRestaurants.sh)** script allows to call the REST service passing the Authorization Bearer token returned by Keycloak to ensure the client is authenticated.
+**[run-tests.sh](run-tests.sh)** runs the whole test suite. For every test it prints what the test is, what it
+does and whether it passed, then a summary per area with pass/fail/skip counts and the list of failures.
 
-Alternatively, once the application is running, the [Swagger UI](#api-documentation-with-swagger-ui--openapi) at `/swagger-ui.html` can be used to explore and call every endpoint interactively, supplying the Bearer token obtained from `requestKeycloakToken.sh` via its "Authorize" button.
+```
+./run-tests.sh                  # all JUnit tests (no running server needed)
+./run-tests.sh --only Security  # only the JUnit classes whose name contains "Security"
+./run-tests.sh --e2e            # JUnit tests, then the live end-to-end tests
+./run-tests.sh --e2e-only       # only the live end-to-end tests
+./run-tests.sh --env dev        # JUnit tests, then the live tests on the local backend (before deploying)
+./run-tests.sh --env prod       # JUnit tests, then the live tests on the Raspberry deployment
+```
+
+`--env` chooses the environment the live tests run against (it implies `--e2e`; without it the live tests target `prod`):
+
+| | `prod` | `dev` |
+|---|---|---|
+| Backend | `https://raspberry02:8081` (deployed, no Spring profile) | `https://localhost:8081` (started by [run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh) with the `dev` profile) |
+| CORS origin tested | `https://raspberry01:9443` | `https://localhost:3000` |
+| Swagger | must require a token | API docs and Swagger UI must be public |
+
+Keycloak and the Windfire Root CA are the same for both. If the backend cannot be reached, the first test fails
+with the reason and the remaining live tests are skipped.
+
+Exit code is 0 when everything passed, 1 when a test failed and 2 when the tests could not run (missing tool,
+build error). The per-test results are written to `target/test-results/results.tsv` and the full Maven output to
+`target/test-results/maven.log`.
+
+The JUnit tests (`mvn test` runs them too) are organised in three layers:
+- **unit** - plain JUnit/Mockito: Keycloak role mapping, JWT validation (issuer, audience, expiry), the 401 body,
+  field constraints of `Restaurant`/`Address`, the business service and the DAO (with a mocked MongoDB repository).
+- **web** - `@WebMvcTest` with the real `SecurityConfig`: authentication, reader/writer authorization, CORS,
+  Swagger access, REST status codes and request validation.
+- **context** - the full application with only Keycloak and MongoDB mocked: wiring, `/actuator/health`, and
+  Swagger with and without the `dev` profile.
+
+Each test declares its description with `@DisplayName` and `@Does` (see
+[testsupport](src/test/java/com/rpozzi/windfire/testsupport)).
+
+The live end-to-end tests in **[e2e-tests.sh](test/e2e-tests.sh)** call the running backend, Keycloak and, through
+the backend, MongoDB:
+- **TLS & health** - the server certificate is trusted by the Windfire Root CA; `/actuator/health` is public and `UP`
+  (its status includes the backend's MongoDB health check).
+- **Keycloak & authentication** - missing or garbage tokens get 401; Keycloak rejects a wrong password; reader and
+  writer logins work, and their tokens carry what the API checks (`iss`, the `windfire-restaurants-api` audience,
+  the client role). When a claim is missing, the failure says what to fix in Keycloak.
+- **Authorization** - reader and writer can list, a reader cannot create, a user without API roles gets 403
+  (optional `WF_NOROLE_USER`).
+- **MongoDB round trip** - a restaurant with every field filled is created, read back field by field and found in the
+  list; a client-supplied `id` cannot overwrite it; an invalid body is rejected and not stored; a reader cannot delete
+  it; the writer deletes it and it is gone (404, not in the list); unknown ids answer 404 for GET and DELETE.
+- **CORS & Swagger** - allowed/unknown origin preflights; Swagger private on `prod`, public on `dev`.
+
+They are configured with `WF_*` environment variables (see the header of the script), whose defaults depend on the
+chosen environment; any of them (e.g. `WF_BASE_URL`) can be set to override it. Passwords that are not set are
+prompted for.
+
+Without credentials the Keycloak, authorization and MongoDB tests cannot run: they are reported as skipped and
+the summary warns that they were **not verified**. Add **`--strict`** to make them fail instead, so that a PASSED
+run really means everything was checked (recommended before a deployment):
+
+```
+WF_WRITER_USER=<writer> WF_NOROLE_USER=<user without roles> ./run-tests.sh --env dev --strict
+```
+
+**The writer tests create and then delete restaurants named `E2E-<timestamp>…` in the real MongoDB database**; if a
+run is interrupted, whatever it created is deleted on exit. Note that **dev and prod use the same MongoDB
+database** (same `spring.data.mongodb.uri`), so `--env dev` also writes to the production data. Each run also makes
+one deliberate wrong-password login for the reader user, which Keycloak records as a failed login.
+
+Once the application is running, the [Swagger UI](#api-documentation-with-swagger-ui--openapi) at `/swagger-ui.html` can also be used to explore and call every endpoint interactively, supplying a Bearer token obtained from Keycloak via its "Authorize" button.
