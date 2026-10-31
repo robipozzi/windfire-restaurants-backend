@@ -17,7 +17,7 @@
 #   WF_REALM             Keycloak realm                    (windfire)
 #   WF_CLIENT_ID         Keycloak client used for login    (windfire)
 #   WF_API_CLIENT_ID     client whose roles the API checks (windfire-restaurants-api)
-#   WF_READER_USER       user with restaurants-reader      (windfire)
+#   WF_READER_USER       user with restaurants-reader      (windfire-reader)
 #   WF_READER_PASSWORD   prompted if unset and a terminal is attached
 #   WF_WRITER_USER       user with restaurants-writer      (unset → writer tests are not run)
 #   WF_WRITER_PASSWORD   prompted if unset and a terminal is attached
@@ -56,7 +56,7 @@ WF_KEYCLOAK_CACERT=${WF_KEYCLOAK_CACERT:-$DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAU
 WF_REALM=${WF_REALM:-windfire}
 WF_CLIENT_ID=${WF_CLIENT_ID:-windfire}
 WF_API_CLIENT_ID=${WF_API_CLIENT_ID:-windfire-restaurants-api}
-WF_READER_USER=${WF_READER_USER:-windfire}
+WF_READER_USER=${WF_READER_USER:-windfire-reader}
 WF_ALLOWED_ORIGIN=${WF_ALLOWED_ORIGIN:-$DEFAULT_ALLOWED_ORIGIN}
 WF_STRICT=${WF_STRICT:-false}
 WF_RESULTS_FILE=${WF_RESULTS_FILE:-../target/test-results/results.tsv}
