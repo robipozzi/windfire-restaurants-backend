@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,9 +30,10 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
     	response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
-        if (authException.getClass().getSimpleName().equals("InsufficientAuthenticationException")) {
+        if (authException instanceof InsufficientAuthenticationException) {
 			errorMessage = "No Bearer token provided";
-		} else if (authException.getClass().getSimpleName().equals("InvalidBearerTokenException")) {
+		} else if (authException instanceof OAuth2AuthenticationException) {
+			// InvalidBearerTokenException, and the plain OAuth2AuthenticationException the resolver throws for "Bearer " with no token
 			errorMessage = "Invalid Bearer token provided";
 		}
         

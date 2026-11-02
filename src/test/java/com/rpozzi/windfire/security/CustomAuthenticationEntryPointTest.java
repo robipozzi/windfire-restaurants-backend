@@ -11,6 +11,8 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.server.resource.BearerTokenErrors;
 import org.springframework.security.oauth2.server.resource.InvalidBearerTokenException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,6 +47,17 @@ class CustomAuthenticationEntryPointTest {
 	void invalidToken() throws Exception {
 		MockHttpServletResponse response = new MockHttpServletResponse();
 		Map<String, String> body = commence(new InvalidBearerTokenException("bad"), response);
+
+		assertEquals(401, response.getStatus());
+		assertEquals(Map.of("error", "unauthorized", "message", "Invalid Bearer token provided"), body);
+	}
+
+	@Test
+	@DisplayName("Malformed Bearer header → 'Invalid Bearer token provided'")
+	@Does("OAuth2AuthenticationException(invalid_token), as thrown for 'Bearer ' with no token → 401, {error: unauthorized, message: Invalid Bearer token provided}")
+	void malformedBearerHeader() throws Exception {
+		MockHttpServletResponse response = new MockHttpServletResponse();
+		Map<String, String> body = commence(new OAuth2AuthenticationException(BearerTokenErrors.invalidToken("Bearer token is malformed")), response);
 
 		assertEquals(401, response.getStatus());
 		assertEquals(Map.of("error", "unauthorized", "message", "Invalid Bearer token provided"), body);

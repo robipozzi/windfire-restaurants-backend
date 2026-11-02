@@ -19,9 +19,9 @@
 #   WF_API_CLIENT_ID     client whose roles the API checks (windfire-restaurants-api)
 #   WF_READER_USER       user with restaurants-reader      (windfire-reader)
 #   WF_READER_PASSWORD   prompted if unset and a terminal is attached
-#   WF_WRITER_USER       user with restaurants-writer      (unset → writer tests are not run)
+#   WF_WRITER_USER       user with restaurants-writer      (windfire)
 #   WF_WRITER_PASSWORD   prompted if unset and a terminal is attached
-#   WF_NOROLE_USER       optional user with NO API role    (unset → the no-role test is skipped)
+#   WF_NOROLE_USER       user with NO API role             (windfire-norole)
 #   WF_NOROLE_PASSWORD   prompted if unset and a terminal is attached
 #   WF_ALLOWED_ORIGIN    an origin in CORS_ALLOWED_ORIGINS (prod: https://raspberry01:9443, dev: https://localhost:3000)
 #   WF_STRICT            true → tests that cannot run for missing credentials FAIL instead of SKIP (false)
@@ -57,6 +57,8 @@ WF_REALM=${WF_REALM:-windfire}
 WF_CLIENT_ID=${WF_CLIENT_ID:-windfire}
 WF_API_CLIENT_ID=${WF_API_CLIENT_ID:-windfire-restaurants-api}
 WF_READER_USER=${WF_READER_USER:-windfire-reader}
+WF_WRITER_USER=${WF_WRITER_USER:-windfire}
+WF_NOROLE_USER=${WF_NOROLE_USER:-windfire-norole}
 WF_ALLOWED_ORIGIN=${WF_ALLOWED_ORIGIN:-$DEFAULT_ALLOWED_ORIGIN}
 WF_STRICT=${WF_STRICT:-false}
 WF_RESULTS_FILE=${WF_RESULTS_FILE:-../target/test-results/results.tsv}
@@ -114,7 +116,7 @@ main()
 	runTest "Reader token carries what the API needs" \
 		"Decode the reader token → iss = $WF_KEYCLOAK_URL/realms/$WF_REALM, aud contains $WF_API_CLIENT_ID, role restaurants-reader on $WF_API_CLIENT_ID" testReaderClaims
 	runTest "Keycloak issues a writer token" \
-		"POST the token endpoint as \$WF_WRITER_USER → 200 with access_token" testWriterLogin
+		"POST the token endpoint as $WF_WRITER_USER → 200 with access_token" testWriterLogin
 	runTest "Writer token carries what the API needs" \
 		"Decode the writer token → same issuer and audience, role restaurants-writer on $WF_API_CLIENT_ID" testWriterClaims
 
@@ -126,7 +128,7 @@ main()
 	runTest "Reader cannot create" \
 		"POST /restaurants with the reader token → 403" testReaderCannotPost
 	runTest "User without any API role is forbidden" \
-		"Log in as \$WF_NOROLE_USER, GET /restaurants → 403" testNoRoleForbidden
+		"Log in as $WF_NOROLE_USER, GET /restaurants → 403" testNoRoleForbidden
 
 	area "Live API [$WF_ENV] · MongoDB round trip"
 	runTest "Writer creates a restaurant" \
@@ -170,11 +172,11 @@ inputPasswords()
 		echo ${cyn}Input password of Keycloak reader user ${end}${mag}$WF_READER_USER${end}${cyn} : ${end}
 		read -s WF_READER_PASSWORD
 	fi
-	if [ -n "$WF_WRITER_USER" ] && [ -z "$WF_WRITER_PASSWORD" ] && [ -t 0 ]; then
+	if [ -z "$WF_WRITER_PASSWORD" ] && [ -t 0 ]; then
 		echo ${cyn}Input password of Keycloak writer user ${end}${mag}$WF_WRITER_USER${end}${cyn} : ${end}
 		read -s WF_WRITER_PASSWORD
 	fi
-	if [ -n "$WF_NOROLE_USER" ] && [ -z "$WF_NOROLE_PASSWORD" ] && [ -t 0 ]; then
+	if [ -z "$WF_NOROLE_PASSWORD" ] && [ -t 0 ]; then
 		echo ${cyn}Input password of Keycloak user without roles ${end}${mag}$WF_NOROLE_USER${end}${cyn} : ${end}
 		read -s WF_NOROLE_PASSWORD
 	fi
@@ -298,7 +300,7 @@ readerCredentialsMissing()
 
 writerCredentialsMissing()
 {
-	[ -z "$WF_WRITER_USER" ] || [ -z "$WF_WRITER_PASSWORD" ]
+	[ -z "$WF_WRITER_PASSWORD" ]
 }
 
 # A missing token is "not verified" (3) when no credentials were given, a plain skip (2) when the login failed
@@ -317,7 +319,7 @@ requireWriter()
 {
 	[ -n "$WRITER_TOKEN" ] && return 0
 	if writerCredentialsMissing; then
-		RESULT_MESSAGE="WF_WRITER_USER / WF_WRITER_PASSWORD not set — writer access and MongoDB writes not verified"
+		RESULT_MESSAGE="WF_WRITER_PASSWORD not set — writer access and MongoDB writes not verified"
 		return 3
 	fi
 	RESULT_MESSAGE="no writer token (the writer login failed above)"
@@ -471,7 +473,7 @@ testReaderClaims()
 testWriterLogin()
 {
 	if writerCredentialsMissing; then
-		RESULT_MESSAGE="WF_WRITER_USER / WF_WRITER_PASSWORD not set — writer login not verified"
+		RESULT_MESSAGE="WF_WRITER_PASSWORD not set — writer login not verified"
 		return 3
 	fi
 	login "$WF_WRITER_USER" "$WF_WRITER_PASSWORD" WRITER_TOKEN
@@ -511,13 +513,14 @@ testReaderCannotPost()
 
 testNoRoleForbidden()
 {
-	if [ -z "$WF_NOROLE_USER" ]; then
-		RESULT_MESSAGE="optional: set WF_NOROLE_USER / WF_NOROLE_PASSWORD to a user without API roles"
-		return 2
+	if [ -z "$WF_NOROLE_PASSWORD" ]; then
+		RESULT_MESSAGE="WF_NOROLE_PASSWORD not set — 403 for a user without API roles not verified"
+		return 3
 	fi
-	local token
-	login "$WF_NOROLE_USER" "$WF_NOROLE_PASSWORD" token || return 1
-	http GET /restaurants -H "Authorization: Bearer $token"
+	# Not named "token": login's own local would shadow it and the printf -v would never reach this one
+	local norole_token
+	login "$WF_NOROLE_USER" "$WF_NOROLE_PASSWORD" norole_token || return 1
+	http GET /restaurants -H "Authorization: Bearer $norole_token"
 	expectStatus 403
 }
 

@@ -450,8 +450,9 @@ the backend, MongoDB:
 - **Keycloak & authentication** - missing or garbage tokens get 401; Keycloak rejects a wrong password; reader and
   writer logins work, and their tokens carry what the API checks (`iss`, the `windfire-restaurants-api` audience,
   the client role). When a claim is missing, the failure says what to fix in Keycloak.
-- **Authorization** - reader and writer can list, a reader cannot create, a user without API roles gets 403
-  (optional `WF_NOROLE_USER`).
+- **Authorization** - reader and writer can list, a reader cannot create, a user without API roles gets 403.
+  The Keycloak users are `windfire-reader` (reader), `windfire` (writer) and `windfire-norole` (no API role);
+  override them with `WF_READER_USER`, `WF_WRITER_USER` and `WF_NOROLE_USER`.
 - **MongoDB round trip** - a restaurant with every field filled is created, read back field by field and found in the
   list; a client-supplied `id` cannot overwrite it; an invalid body is rejected and not stored; a reader cannot delete
   it; the writer deletes it and it is gone (404, not in the list); unknown ids answer 404 for GET and DELETE.
@@ -466,7 +467,7 @@ the summary warns that they were **not verified**. Add **`--strict`** to make th
 run really means everything was checked (recommended before a deployment):
 
 ```
-WF_WRITER_USER=<writer> WF_NOROLE_USER=<user without roles> ./run-tests.sh --env dev --strict
+./run-tests.sh --env dev --strict
 ```
 
 **The writer tests create and then delete restaurants named `E2E-<timestamp>…` in the real MongoDB database**; if a

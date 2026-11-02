@@ -209,6 +209,15 @@ class SecurityConfigTest {
 		}
 
 		@Test
+		@DisplayName("Empty Bearer header is unauthorized")
+		@Does("GET /restaurants with 'Bearer ' and no token → 401 Invalid Bearer token provided")
+		void emptyBearerIsUnauthorized() throws Exception {
+			mockMvc.perform(get("/restaurants").header(HttpHeaders.AUTHORIZATION, "Bearer "))
+					.andExpect(status().isUnauthorized())
+					.andExpect(jsonPath("$.message").value("Invalid Bearer token provided"));
+		}
+
+		@Test
 		@DisplayName("Bearer-token requests need no CSRF token")
 		@Does("POST /restaurants with a real writer Bearer token and no CSRF token → 200 (CSRF only applies to cookie sessions)")
 		void bearerRequestNeedsNoCsrf() throws Exception {
