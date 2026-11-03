@@ -45,7 +45,7 @@ Once requirements are met, one can build and run the application with the follow
 
 A convenient script **[build.sh](build.sh)** is provided to build the application from source code.
 
-Another script **[run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh)** is provided to run the application, once it has been built. It interactively prompts for the Keycloak server host/port, the allowed CORS origins (default `http://localhost:3000,https://localhost:3000`), the Keycloak client truststore password and the MongoDB password, exports them as environment variables consumed by **[application.properties](src/main/resources/application.properties)**, and starts the JVM in the background. Before running it for the first time, see [Keycloak client trust (outbound TLS)](#keycloak-client-trust-outbound-tls) for a one-time truststore setup step it depends on.
+Another script **[run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh)** is provided to run the application, once it has been built. It interactively prompts for the Keycloak server host/port, the allowed CORS origins (default `https://localhost`), the Keycloak client truststore password and the MongoDB password, exports them as environment variables consumed by **[application.properties](src/main/resources/application.properties)**, and starts the JVM in the background. Before running it for the first time, see [Keycloak client trust (outbound TLS)](#keycloak-client-trust-outbound-tls) for a one-time truststore setup step it depends on.
 
 ### Stop the application
 **[stop-windfire-restaurants-backend.sh](stop-windfire-restaurants-backend.sh)** looks up the running `windfire-restaurants-backend` process, sends it a graceful `kill`, waits up to 10 seconds for it to shut down, and force-kills it (`kill -9`) if it hasn't stopped by then.
@@ -422,7 +422,7 @@ does and whether it passed, then a summary per area with pass/fail/skip counts a
 | | `prod` | `dev` |
 |---|---|---|
 | Backend | `https://raspberry02:8081` (deployed, no Spring profile) | `https://localhost:8081` (started by [run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh) with the `dev` profile) |
-| CORS origin tested | `https://raspberry01:9443` | `https://localhost:3000` |
+| CORS origin tested | `https://raspberry01:9443` | `https://localhost` |
 | Swagger | must require a token | API docs and Swagger UI must be public |
 
 Keycloak and the Windfire Root CA are the same for both. If the backend cannot be reached, the first test fails

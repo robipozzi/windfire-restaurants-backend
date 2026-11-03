@@ -32,8 +32,8 @@ APPLICATION_SERVER_HOST=
 APPLICATION_SERVER_PORT=
 ## == Application server configurations - END
 ## -- CORS configurations - START
-# Comma-separated list of exact origins allowed to call the API (local windfire-ui-react dev server)
-DEFAULT_CORS_ALLOWED_ORIGINS=http://localhost:3000,https://localhost:3000
+# Comma-separated list of exact origins allowed to call the API (local windfire-ui-react served by ./start.sh)
+DEFAULT_CORS_ALLOWED_ORIGINS=https://localhost
 CORS_ALLOWED_ORIGINS=
 ## -- CORS configurations - END
 

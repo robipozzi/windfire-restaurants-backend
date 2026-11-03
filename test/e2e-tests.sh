@@ -23,7 +23,7 @@
 #   WF_WRITER_PASSWORD   prompted if unset and a terminal is attached
 #   WF_NOROLE_USER       user with NO API role             (windfire-norole)
 #   WF_NOROLE_PASSWORD   prompted if unset and a terminal is attached
-#   WF_ALLOWED_ORIGIN    an origin in CORS_ALLOWED_ORIGINS (prod: https://raspberry01:9443, dev: https://localhost:3000)
+#   WF_ALLOWED_ORIGIN    an origin in CORS_ALLOWED_ORIGINS (prod: https://raspberry01:9443, dev: https://localhost)
 #   WF_STRICT            true → tests that cannot run for missing credentials FAIL instead of SKIP (false)
 #   WF_RESULTS_FILE      TSV file results are appended to  (../target/test-results/results.tsv)
 cd "$(dirname "$0")" || exit 2
@@ -42,7 +42,7 @@ case $WF_ENV in
 		;;
 	# Local backend: allowed origins are DEFAULT_CORS_ALLOWED_ORIGINS from setenv.sh
 	dev)   DEFAULT_BASE_URL=https://localhost:$DEFAULT_APPLICATION_SERVER_PORT
-	       DEFAULT_ALLOWED_ORIGIN=https://localhost:3000
+	       DEFAULT_ALLOWED_ORIGIN=https://localhost
 	       SWAGGER_PUBLIC=true
 		;;
 	*)     echo "${red}WF_ENV must be prod or dev, not '$WF_ENV'${end}"
