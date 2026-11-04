@@ -217,12 +217,12 @@ printSummary()
     echo ${blu}**************************************************${end}
     echo ${blu}***** Import Root CA into macOS Keychain *****${end}
     echo ${blu}**************************************************${end}
-    echo "${yel}Trusting the Windfire Root CA (only needed once, it covers every certificate it signs):${end}"
-    echo ${grn}sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain $ROOT_CA_CERTIFICATE_PATH${end}
+    echo "${yel}Trusting the Windfire Root CA in your login keychain (only needed once, it covers every certificate it signs; macOS asks for your password):${end}"
+    echo ${grn}security add-trusted-cert -r trustRoot -k ~/Library/Keychains/login.keychain-db $ROOT_CA_CERTIFICATE_PATH${end}
     echo
     echo ${yel}Then restart your browser for the change to take effect.${end}
     echo
-    sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain $ROOT_CA_CERTIFICATE_PATH
+    security add-trusted-cert -r trustRoot -k ~/Library/Keychains/login.keychain-db $ROOT_CA_CERTIFICATE_PATH
     echo
 }
 ####################################
