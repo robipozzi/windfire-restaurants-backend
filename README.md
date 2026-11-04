@@ -45,7 +45,7 @@ Once requirements are met, one can build and run the application with the follow
 
 A convenient script **[build.sh](build.sh)** is provided to build the application from source code.
 
-Another script **[run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh)** is provided to run the application, once it has been built. It interactively prompts for the Keycloak server host/port, the allowed CORS origins (default `https://localhost`), the Keycloak client truststore password and the MongoDB **dev** password (user `windfire-dev-app`), exports them as environment variables consumed by **[application.properties](src/main/resources/application.properties)**, and starts the JVM in the background. Before running it for the first time, see [Keycloak client trust (outbound TLS)](#keycloak-client-trust-outbound-tls) for a one-time truststore setup step it depends on.
+Another script **[run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh)** is provided to run the application, once it has been built. It interactively prompts for the Keycloak server host/port, the allowed CORS origins (default `https://localhost`) and the MongoDB **dev** password (user `windfire-dev-app`), exports them as environment variables consumed by **[application.properties](src/main/resources/application.properties)**, and starts the JVM in the background. It stops early if the Windfire Keycloak Root CA certificate is missing, see [Keycloak client trust (outbound TLS)](#keycloak-client-trust-outbound-tls).
 
 ### Stop the application
 **[stop-windfire-restaurants-backend.sh](stop-windfire-restaurants-backend.sh)** looks up the running `windfire-restaurants-backend` process, sends it a graceful `kill`, waits up to 10 seconds for it to shut down, and force-kills it (`kill -9`) if it hasn't stopped by then.
@@ -61,13 +61,13 @@ The application can be fully built, packaged and deployed to a Raspberry Pi (`ra
 1. Prompts for the target platform (currently only `1. Raspberry` is available).
 2. Builds the application from source (`./build.sh 4`, i.e. `mvn clean install`).
 3. Generates the TLS server certificate/key for the `raspberry` environment if not already present, via **[ssl/generate-ssl-cert.sh](ssl/generate-ssl-cert.sh)**.
-4. Generates the Keycloak client truststore if it is missing or does not trust the current Windfire Keycloak Root CA, via **[ssl/generate-keycloak-truststore.sh](ssl/generate-keycloak-truststore.sh)** `--if-stale`.
-5. Prompts once for the Keycloak host/port, the Keycloak truststore password and the MongoDB **prod** password (user `windfire-prod-app`), and exports them as environment variables.
+4. Checks that the Windfire Keycloak Root CA certificate (`~/opt/keycloak/ssl/truststore/WindfireKeycloakRootCA.crt`) exists, and stops otherwise.
+5. Prompts once for the Keycloak host/port and the MongoDB **prod** password (user `windfire-prod-app`), and exports them as environment variables.
 6. Runs the Ansible playbook (with `-K`: sudo on `raspberry02` requires `pi`'s password, typed at the `BECOME password` prompt) **[deployment/raspberry/windfire-restaurants.yaml](deployment/raspberry/windfire-restaurants.yaml)**, which:
    - stops any previously running `windfire-restaurants-backend` systemd service;
-   - copies the application jar, launch scripts, TLS certificate/key and Keycloak client truststore to the Pi;
+   - copies the application jar, launch scripts, TLS certificate/key and the Windfire Keycloak Root CA certificate (`WindfireKeycloakRootCA.crt`, mode `0644`) to the Pi, and removes any legacy `keycloak.truststore.jks` left there;
    - templates the environment file (Keycloak host/port, CORS origins, and the prod `MONGODB_HOST`/`MONGODB_USER` from `config.yml`) and a `windfire-restaurants-backend.service` systemd unit (**[templates/windfire-restaurants-backend.service.j2](deployment/raspberry/templates/windfire-restaurants-backend.service.j2)**, **[templates/windfire-restaurants-backend.env.j2](deployment/raspberry/templates/windfire-restaurants-backend.env.j2)**);
-   - encrypts the Keycloak truststore password and MongoDB password at rest on the Pi using `systemd-creds`, so they never sit in plaintext on disk, and wires them into the service via `LoadCredentialEncrypted`;
+   - encrypts the MongoDB password at rest on the Pi using `systemd-creds`, so it never sits in plaintext on disk, and wires it into the service via `LoadCredentialEncrypted`;
    - reloads `systemd`, starts and enables the service, and finally verifies the application is listening on port `8081`.
 
 Deployment configuration (remote paths, users, file names, etc.) lives in **[deployment/raspberry/conf/config.yml](deployment/raspberry/conf/config.yml)**.
@@ -367,60 +367,38 @@ certificate. Keycloak is HTTPS-only, serving `https://raspberry01:8443` with a c
 dedicated **Windfire Keycloak Root CA** (set up by
 [windfire-security/keycloak/security/setupTLS.sh](https://github.com/robipozzi/windfire-security/blob/main/keycloak/security/setupTLS.sh),
 independent of the Windfire Root CA used for this application's own certificate), so the application also
-needs *outbound* trust: when it fetches Keycloak's OIDC metadata and JWKS to validate incoming JWTs, the
-JVM needs to trust the Windfire Keycloak Root CA too. There is no
-custom `RestTemplate`/`JwtDecoder`/`SSLContext` bean in the codebase, so this trust cannot be set as a
-Spring property — it is supplied JVM-wide via `-Djavax.net.ssl.trustStore` /
-`-Djavax.net.ssl.trustStorePassword` on the `java` invocation.
+needs *outbound* trust: when it fetches Keycloak's OIDC metadata and JWKS to validate incoming JWTs, it has
+to trust the Windfire Keycloak Root CA.
 
-**Important:** because it is JVM-wide, this truststore covers every outbound TLS connection the
-process makes, not just Keycloak — including the outbound MongoDB Atlas connection, whose certificate
-is signed by a public CA. To avoid losing that trust, the truststore is not built from scratch: it is
-seeded from the running JDK's own default `cacerts` (which already trusts the public CAs) and then
-Keycloak's CA is imported into that copy.
+This trust is scoped to Keycloak only, via a Spring Boot PEM SSL bundle named `keycloak`, declared in
+**[application.properties](src/main/resources/application.properties)**:
 
-A convenient script **[generate-keycloak-truststore.sh](ssl/generate-keycloak-truststore.sh)** is
-provided to (re)build this truststore. It expects Keycloak's CA certificate to already exist at
-`$DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_ROOT_CA_CERTIFICATE`, i.e.
-`~/opt/keycloak/ssl/truststore/WindfireKeycloakRootCA.crt`, the **Windfire Keycloak Root CA** created by
-`windfire-security/keycloak/security/setupTLS.sh` (it only rebuilds the truststore, it does not create
-the CA certificate itself), then:
-- copies the running JDK's default `cacerts` to
-  `$DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_TRUSTSTORE`, replacing any existing truststore
-  there
-- imports the Windfire Keycloak Root CA certificate into that copy under alias `windfire-keycloak-root`, using the password from
-  `DEFAULT_KEYCLOAK_TRUSTSTORE_PWD` in **[setenv.sh](setenv.sh)** (`changeit` by default)
-- verifies the merge worked, by confirming both a known public CA and the new `windfire-keycloak-root` alias are
-  listed in the resulting truststore
-
-Run it once (and again whenever Keycloak's CA certificate changes) with:
-```bash
-cd ssl
-./generate-keycloak-truststore.sh
+```
+spring.ssl.bundle.pem.keycloak.truststore.certificate=file:${HOME_DIR}/opt/keycloak/ssl/truststore/WindfireKeycloakRootCA.crt
 ```
 
-With `--if-stale` the script rebuilds the truststore only if it is missing or its `windfire-keycloak-root`
-entry does not have the same SHA-256 fingerprint as the current Windfire Keycloak Root CA certificate.
-Both **[run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh)** and
-**[deploy.sh](deploy.sh)** run it this way before starting/deploying the application, so a new Keycloak
-CA is picked up automatically: just make sure the new `WindfireKeycloakRootCA.crt` is in
-`~/opt/keycloak/ssl/truststore`.
+The `JwtDecoder` bean in **[SecurityConfig.java](src/main/java/com/rpozzi/windfire/security/SecurityConfig.java)**
+builds its `RestTemplate` with `RestTemplateBuilder.setSslBundle(...)` on that bundle and passes it to
+`NimbusJwtDecoder.withIssuerLocation(...)`, so both the OIDC discovery call and the JWKS fetch trust the
+Windfire Keycloak Root CA. Nothing else uses the bundle: the JVM default trust (the JDK `cacerts`) is left
+untouched, so MongoDB Atlas, whose certificate is signed by a public CA, and any other outbound TLS
+connection keep working as before. **[MongoTlsTrustTest](src/test/java/com/rpozzi/windfire/config/MongoTlsTrustTest.java)**
+checks that the Mongo client never gets a custom `SSLContext`.
+
+There is no JKS truststore, no truststore password and no `-Djavax.net.ssl.trustStore*` JVM flag. The only
+prerequisite is the CA certificate itself at `~/opt/keycloak/ssl/truststore/WindfireKeycloakRootCA.crt`
+(`$DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_ROOT_CA_CERTIFICATE` in **[setenv.sh](setenv.sh)**),
+created by `windfire-security/keycloak/security/setupTLS.sh`. Both
+**[run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh)** and **[deploy.sh](deploy.sh)**
+stop early if it is missing. When Keycloak's CA changes, replace the file and restart (or redeploy) the
+application. When [deployed to Raspberry Pi](#deploy-to-raspberry-pi), the playbook copies the certificate
+(mode `0644`, it is public) to the same path under `/home/pi`, where `HOME_DIR` points.
 
 **Keycloak hostname:** Keycloak's server certificate only has `raspberry01` as Subject Alternative Name, so
 the Keycloak host given to the run/deploy scripts (`KEYCLOAK_SERVER`) must be exactly `raspberry01`, not an
 IP address or another name. It must also match the issuer Keycloak advertises
 (`https://raspberry01:8443/realms/windfire`), since Spring checks the token `iss` claim against
 `spring.security.oauth2.resourceserver.jwt.issuer-uri`.
-
-This is a one-time/local setup step whose *output* (the `.jks` file) is not tracked in git — only the
-script that produces it lives in the repository.
-
-**[run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh)** prompts for the
-truststore password, defaulting to `DEFAULT_KEYCLOAK_TRUSTSTORE_PWD` from **[setenv.sh](setenv.sh)**,
-and passes it to the JVM via `-Djavax.net.ssl.trustStorePassword` alongside
-`-Djavax.net.ssl.trustStore`. When [deployed to Raspberry Pi](#deploy-to-raspberry-pi), the same
-truststore and password are instead delivered to the `systemd` service via an encrypted
-`systemd-creds` credential.
 
 ### Test the application
 **[run-tests.sh](run-tests.sh)** runs the whole test suite. For every test it prints what the test is, what it

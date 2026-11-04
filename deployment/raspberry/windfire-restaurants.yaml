@@ -8,7 +8,6 @@
     mode: u=rwx
     keycloak_server: "{{ lookup('env', 'KEYCLOAK_SERVER') }}"
     keycloak_server_port: "{{ lookup('env', 'KEYCLOAK_SERVER_PORT') }}"
-    keycloak_truststore_pwd: "{{ lookup('env', 'KEYCLOAK_TRUSTSTORE_PWD') }}"
     mongodb_password: "{{ lookup('env', 'MONGODB_PASSWORD') }}"
   vars_files:
     - "{{ src_dir }}/conf/config.yml"
@@ -83,20 +82,24 @@
         owner: "{{ user }}"
         group: "{{ group }}"
         mode: "0600"
-    #########################################################
-    ##### Keycloak client truststore deployment section #####
-    #########################################################
+    ###########################################################
+    ##### Keycloak Root CA certificate deployment section #####
+    ###########################################################
     - name: Ensure remote Keycloak truststore directory exists
       file:
         path: "{{ remote_keycloak_truststore_dir }}"
         state: directory
-    - name: Copy Keycloak client truststore "{{ keycloak_truststore_file }}" to remote server
+    - name: Copy Windfire Keycloak Root CA "{{ keycloak_root_ca_certificate }}" to remote server
       copy:
-        src: "{{ local_keycloak_truststore_dir }}/{{ keycloak_truststore_file }}"
-        dest: "{{ remote_keycloak_truststore_dir }}/{{ keycloak_truststore_file }}"
+        src: "{{ local_keycloak_truststore_dir }}/{{ keycloak_root_ca_certificate }}"
+        dest: "{{ remote_keycloak_truststore_dir }}/{{ keycloak_root_ca_certificate }}"
         owner: "{{ user }}"
         group: "{{ group }}"
-        mode: "0600"
+        mode: "0644"
+    - name: Remove legacy JVM-wide Keycloak truststore, replaced by the PEM SSL bundle
+      file:
+        path: "{{ remote_keycloak_truststore_dir }}/keycloak.truststore.jks"
+        state: absent
     ################################################################
     ##### Windfire Restaurants backend systemd service section #####
     ################################################################
@@ -118,7 +121,6 @@
       set_fact:
         windfire_secrets_blob: |
           MONGODB_PASSWORD={{ mongodb_password }}
-          KEYCLOAK_TRUSTSTORE_PWD={{ keycloak_truststore_pwd }}
       no_log: true
     - name: Ensure /etc/credstore.encrypted directory exists
       file:

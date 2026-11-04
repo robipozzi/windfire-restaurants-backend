@@ -5,7 +5,6 @@ SCRIPT=deploy.sh
 PLATFORM_OPTION=
 KEYCLOAK_HOST=
 KEYCLOAK_PORT=
-KEYCLOAK_TRUSTSTORE_PWD=
 MONGODB_PWD=
 ##### Variable section - END
 
@@ -58,14 +57,20 @@ checkSSLCertificates()
     echo
 }
 
-checkKeycloakTruststore()
+checkKeycloakRootCA()
 {
-    echo ${blu}********************************************${end}
-    echo ${blu}***** Check Keycloak client truststore *****${end}
-    echo ${blu}********************************************${end}
+    echo ${blu}*******************************************${end}
+    echo ${blu}***** Check Windfire Keycloak Root CA *****${end}
+    echo ${blu}*******************************************${end}
     echo
-    # Rebuilds the truststore if it is missing or does not trust the current Windfire Keycloak Root CA
-    (cd ssl && ./generate-keycloak-truststore.sh --if-stale) || { echo ${red}Error: Keycloak client truststore is not usable${end} >&2; exit 1; }
+    # Copied to the Pi and trusted only for Keycloak calls (spring.ssl.bundle.pem.keycloak)
+    if [ ! -f "$DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_ROOT_CA_CERTIFICATE" ]; then
+        echo ${red}Error: Windfire Keycloak Root CA not found: $DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_ROOT_CA_CERTIFICATE${end} >&2
+        echo ${yel}Create it with windfire-security/keycloak/security/setupTLS.sh${end} >&2
+        exit 1
+    fi
+    echo ${grn}Windfire Keycloak Root CA found in $DEFAULT_KEYCLOAK_TRUSTSTORE_DIR${end}
+    echo
 }
 
 inputKeycloakServer()
@@ -86,19 +91,6 @@ inputKeycloakServerPort()
     fi
 }
 
-inputKeycloakTruststorePassword()
-{
-	KEYCLOAK_TRUSTSTORE_PWD=
-	while [ "$KEYCLOAK_TRUSTSTORE_PWD" == "" ]; do
-		echo ${cyn}Input Keycloak client truststore password - leaving blank will set truststore password to ${end}${mag}[***DEFAULT KEYCLOAK TRUSTSTORE PWD***] : ${end}
-		read -s KEYCLOAK_TRUSTSTORE_PWD
-		echo
-		if [ "$KEYCLOAK_TRUSTSTORE_PWD" == "" ]; then
-			KEYCLOAK_TRUSTSTORE_PWD=$DEFAULT_KEYCLOAK_TRUSTSTORE_PWD
-		fi
-	done
-}
-
 inputMongoDBPassword()
 {
 	MONGODB_PWD=
@@ -116,11 +108,9 @@ collectSecrets()
 {
 	inputKeycloakServer
 	inputKeycloakServerPort
-	inputKeycloakTruststorePassword
 	inputMongoDBPassword
 	export KEYCLOAK_SERVER=$KEYCLOAK_HOST
 	export KEYCLOAK_SERVER_PORT=$KEYCLOAK_PORT
-	export KEYCLOAK_TRUSTSTORE_PWD=$KEYCLOAK_TRUSTSTORE_PWD
 	export MONGODB_PASSWORD=$MONGODB_PWD
 }
 
@@ -128,7 +118,7 @@ deployRaspberry()
 {
 	buildApplication
 	checkSSLCertificates
-	checkKeycloakTruststore
+	checkKeycloakRootCA
 	collectSecrets
 	# sudo on raspberry02 requires pi's password: -K asks for it (BECOME password)
 	ansible-playbook -K deployment/raspberry/windfire-restaurants.yaml

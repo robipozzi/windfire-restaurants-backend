@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.ssl.SslBundles;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -26,6 +28,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -33,6 +36,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+	static final String KEYCLOAK_SSL_BUNDLE = "keycloak";
 
 	@Autowired
     private CustomAuthenticationEntryPoint authenticationEntryPoint;
@@ -87,9 +92,16 @@ public class SecurityConfig {
 				.toList();
 	}
 
+	/**
+	 * OIDC discovery and JWKS calls to Keycloak trust only the "keycloak" SSL bundle (Windfire Keycloak Root CA);
+	 * the rest of the JVM (MongoDB Atlas included) keeps the default trust.
+	 */
 	@Bean
-	JwtDecoder jwtDecoder() {
-		NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withIssuerLocation(issuerUri).build();
+	JwtDecoder jwtDecoder(RestTemplateBuilder restTemplateBuilder, SslBundles sslBundles) {
+		RestTemplate keycloakRestTemplate = restTemplateBuilder.setSslBundle(sslBundles.getBundle(KEYCLOAK_SSL_BUNDLE)).build();
+		NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withIssuerLocation(issuerUri)
+				.restOperations(keycloakRestTemplate)
+				.build();
 		jwtDecoder.setJwtValidator(jwtValidator(issuerUri, apiClientId));
 		return jwtDecoder;
 	}

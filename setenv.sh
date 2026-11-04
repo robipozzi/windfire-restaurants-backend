@@ -63,12 +63,10 @@ RASPBERRY_KEYSTORE_DIR=$WINDFIRE_SSL_DIR/keystore/raspberry
 # *********************************
 # ***** Keycloak TLS settings *****
 # *********************************
-# Keycloak Truststore settings
+# Directory holding the Windfire Keycloak Root CA, trusted by the "keycloak" SSL bundle (application.properties)
 DEFAULT_KEYCLOAK_TRUSTSTORE_DIR=$HOME/opt/keycloak/ssl/truststore
 # Windfire Keycloak Root CA certificate, created by windfire-security/keycloak/security/setupTLS.sh
 DEFAULT_KEYCLOAK_ROOT_CA_CERTIFICATE=WindfireKeycloakRootCA.crt
-DEFAULT_KEYCLOAK_TRUSTSTORE=keycloak.truststore.jks
-DEFAULT_KEYCLOAK_TRUSTSTORE_PWD=changeit
 ####################################
 ###### Variable section - END ######
 ####################################

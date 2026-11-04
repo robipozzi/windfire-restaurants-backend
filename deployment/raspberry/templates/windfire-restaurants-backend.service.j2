@@ -8,7 +8,7 @@ User={{ user }}
 WorkingDirectory={{ remote_windfirerestaurants_dir }}
 EnvironmentFile={{ remote_windfirerestaurants_dir }}/windfire-restaurants-backend.env
 LoadCredentialEncrypted=windfire-restaurants-backend-secrets:/etc/credstore.encrypted/windfire-restaurants-backend-secrets
-ExecStart=/bin/bash -c 'set -a; source "$CREDENTIALS_DIRECTORY/windfire-restaurants-backend-secrets"; set +a; exec /usr/bin/java -Djavax.net.ssl.trustStore={{ remote_keycloak_truststore_dir }}/{{ keycloak_truststore_file }} -Djavax.net.ssl.trustStorePassword="$KEYCLOAK_TRUSTSTORE_PWD" -jar {{ remote_windfirerestaurants_run_target_dir }}/{{ windfirerestaurants_app_jar }}'
+ExecStart=/bin/bash -c 'set -a; source "$CREDENTIALS_DIRECTORY/windfire-restaurants-backend-secrets"; set +a; exec /usr/bin/java -jar {{ remote_windfirerestaurants_run_target_dir }}/{{ windfirerestaurants_app_jar }}'
 Restart=on-failure
 RestartSec=5
 StandardOutput=append:{{ remote_windfirerestaurants_dir }}/logs/windfire-restaurants-backend.log

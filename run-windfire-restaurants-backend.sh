@@ -17,8 +17,12 @@ MONGODB_PWD=
 main()
 {
 	CURRENT_DIRECTORY=$(pwd)
-	# Rebuilds the truststore if it is missing or does not trust the current Windfire Keycloak Root CA
-	(cd ssl && ./generate-keycloak-truststore.sh --if-stale) || { echo ${red}Error: Keycloak client truststore is not usable${end} >&2; exit 1; }
+	# Trusted only for Keycloak calls (spring.ssl.bundle.pem.keycloak); MongoDB Atlas keeps the JVM default trust
+	if [ ! -f "$DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_ROOT_CA_CERTIFICATE" ]; then
+		echo ${red}Error: Windfire Keycloak Root CA not found: $DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_ROOT_CA_CERTIFICATE${end} >&2
+		echo ${yel}Create it with windfire-security/keycloak/security/setupTLS.sh${end} >&2
+		exit 1
+	fi
 	inputKeycloakServer
 	inputKeycloakServerPort
 	export KEYCLOAK_SERVER=$KEYCLOAK_HOST
@@ -26,14 +30,10 @@ main()
 	inputCorsAllowedOrigins
 	export CORS_ALLOWED_ORIGINS=$CORS_ALLOWED_ORIGINS
 	export HOME_DIR=$HOME
-	inputKeycloakTruststorePassword
-	export KEYCLOAK_TRUSTSTORE_PWD=$KEYCLOAK_TRUSTSTORE_PWD
 	inputMongoDBPassword
 	export MONGODB_PASSWORD=$MONGODB_PWD
 	java -version
-	java -Djavax.net.ssl.trustStore=$DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_TRUSTSTORE \
-	     -Djavax.net.ssl.trustStorePassword=$KEYCLOAK_TRUSTSTORE_PWD \
-	     -jar target/$JAR_NAME-$VERSION.jar --spring.profiles.active=dev &
+	java -jar target/$JAR_NAME-$VERSION.jar --spring.profiles.active=dev &
 }
 
 inputKeycloakServer()
@@ -60,16 +60,6 @@ inputCorsAllowedOrigins()
 	read CORS_ALLOWED_ORIGINS
 	if [ "$CORS_ALLOWED_ORIGINS" == "" ]; then
 		CORS_ALLOWED_ORIGINS=$DEFAULT_CORS_ALLOWED_ORIGINS
-    fi
-}
-
-inputKeycloakTruststorePassword()
-{
-	echo ${cyn}Input Keycloak client truststore password - leaving blank will set truststore password to ${end}${mag}[***DEFAULT KEYCLOAK TRUSTSTORE PWD***] : ${end}
-	read -s KEYCLOAK_TRUSTSTORE_PWD
-	echo
-	if [ "$KEYCLOAK_TRUSTSTORE_PWD" == "" ]; then
-		KEYCLOAK_TRUSTSTORE_PWD=$DEFAULT_KEYCLOAK_TRUSTSTORE_PWD
     fi
 }
 
