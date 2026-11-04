@@ -3,7 +3,7 @@
 # Normally launched by ../run-tests.sh --e2e / --env; can also be run on its own from this folder.
 #
 # WARNING: the writer tests create (and then delete) restaurants named E2E-<timestamp>... in the REAL
-# MongoDB database the backend is connected to. dev and prod use the SAME database.
+# MongoDB database the backend under test is connected to: the dev cluster for dev, the PROD data for prod.
 #
 # Configuration (environment variables, defaults from setenv.sh):
 #   WF_ENV               environment under test: prod or dev (prod)

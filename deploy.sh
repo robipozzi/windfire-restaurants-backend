@@ -103,7 +103,7 @@ inputMongoDBPassword()
 {
 	MONGODB_PWD=
 	while [ "$MONGODB_PWD" == "" ]; do
-		echo ${grn}Enter MongoDB password : ${end}
+		echo ${grn}Enter MongoDB prod password \(user windfire-prod-app on windfire.rxdd4.mongodb.net\) : ${end}
 		read -s MONGODB_PWD
 		echo
 		if [ "$MONGODB_PWD" == "" ]; then

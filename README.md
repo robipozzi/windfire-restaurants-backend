@@ -45,7 +45,7 @@ Once requirements are met, one can build and run the application with the follow
 
 A convenient script **[build.sh](build.sh)** is provided to build the application from source code.
 
-Another script **[run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh)** is provided to run the application, once it has been built. It interactively prompts for the Keycloak server host/port, the allowed CORS origins (default `https://localhost`), the Keycloak client truststore password and the MongoDB password, exports them as environment variables consumed by **[application.properties](src/main/resources/application.properties)**, and starts the JVM in the background. Before running it for the first time, see [Keycloak client trust (outbound TLS)](#keycloak-client-trust-outbound-tls) for a one-time truststore setup step it depends on.
+Another script **[run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh)** is provided to run the application, once it has been built. It interactively prompts for the Keycloak server host/port, the allowed CORS origins (default `https://localhost`), the Keycloak client truststore password and the MongoDB **dev** password (user `windfire-dev-app`), exports them as environment variables consumed by **[application.properties](src/main/resources/application.properties)**, and starts the JVM in the background. Before running it for the first time, see [Keycloak client trust (outbound TLS)](#keycloak-client-trust-outbound-tls) for a one-time truststore setup step it depends on.
 
 ### Stop the application
 **[stop-windfire-restaurants-backend.sh](stop-windfire-restaurants-backend.sh)** looks up the running `windfire-restaurants-backend` process, sends it a graceful `kill`, waits up to 10 seconds for it to shut down, and force-kills it (`kill -9`) if it hasn't stopped by then.
@@ -62,11 +62,11 @@ The application can be fully built, packaged and deployed to a Raspberry Pi (`ra
 2. Builds the application from source (`./build.sh 4`, i.e. `mvn clean install`).
 3. Generates the TLS server certificate/key for the `raspberry` environment if not already present, via **[ssl/generate-ssl-cert.sh](ssl/generate-ssl-cert.sh)**.
 4. Generates the Keycloak client truststore if it is missing or does not trust the current Windfire Keycloak Root CA, via **[ssl/generate-keycloak-truststore.sh](ssl/generate-keycloak-truststore.sh)** `--if-stale`.
-5. Prompts once for the Keycloak host/port, the Keycloak truststore password and the MongoDB password, and exports them as environment variables.
+5. Prompts once for the Keycloak host/port, the Keycloak truststore password and the MongoDB **prod** password (user `windfire-prod-app`), and exports them as environment variables.
 6. Runs the Ansible playbook (with `-K`: sudo on `raspberry02` requires `pi`'s password, typed at the `BECOME password` prompt) **[deployment/raspberry/windfire-restaurants.yaml](deployment/raspberry/windfire-restaurants.yaml)**, which:
    - stops any previously running `windfire-restaurants-backend` systemd service;
    - copies the application jar, launch scripts, TLS certificate/key and Keycloak client truststore to the Pi;
-   - templates the environment file and a `windfire-restaurants-backend.service` systemd unit (**[templates/windfire-restaurants-backend.service.j2](deployment/raspberry/templates/windfire-restaurants-backend.service.j2)**, **[templates/windfire-restaurants-backend.env.j2](deployment/raspberry/templates/windfire-restaurants-backend.env.j2)**);
+   - templates the environment file (Keycloak host/port, CORS origins, and the prod `MONGODB_HOST`/`MONGODB_USER` from `config.yml`) and a `windfire-restaurants-backend.service` systemd unit (**[templates/windfire-restaurants-backend.service.j2](deployment/raspberry/templates/windfire-restaurants-backend.service.j2)**, **[templates/windfire-restaurants-backend.env.j2](deployment/raspberry/templates/windfire-restaurants-backend.env.j2)**);
    - encrypts the Keycloak truststore password and MongoDB password at rest on the Pi using `systemd-creds`, so they never sit in plaintext on disk, and wires them into the service via `LoadCredentialEncrypted`;
    - reloads `systemd`, starts and enables the service, and finally verifies the application is listening on port `8081`.
 
@@ -228,15 +228,33 @@ With the `dev` profile, the interactive Swagger UI is available at `/swagger-ui.
 ### Data persistence with MongoDB
 Restaurants are persisted in MongoDB using Spring Data MongoDB. **[Restaurant](src/main/java/com/rpozzi/windfire/restaurants/entities/Restaurant.java)** is annotated as a `@Document("restaurants")`, and **[IRestaurantRepository](src/main/java/com/rpozzi/windfire/restaurants/entities/IRestaurantRepository.java)** extends Spring Data's `MongoRepository<Restaurant, String>` to get CRUD operations for free; **[RestaurantDao](src/main/java/com/rpozzi/windfire/restaurants/entities/RestaurantDao.java)** wraps that repository behind the generic `IDao` contract described in [Layered architecture](#layered-architecture).
 
-The MongoDB connection is configured in **[application.properties](src/main/resources/application.properties)**:
+Dev and prod use **two separate MongoDB Atlas clusters**, each with its own database user. The database (`restaurants`) and the collection (`restaurants`) are the same in both:
+
+| Environment | Started by | Atlas host | User | Where host/user come from |
+|---|---|---|---|---|
+| dev | [run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh) (`dev` profile) | `windfire-dev.dx6zesz.mongodb.net` (project `windfire-dev`) | `windfire-dev-app` | [application-dev.properties](src/main/resources/application-dev.properties) |
+| prod | [deploy.sh](deploy.sh) → systemd on `raspberry02` (no profile) | `windfire.rxdd4.mongodb.net` | `windfire-prod-app` | `mongodb_host` / `mongodb_user` in [config.yml](deployment/raspberry/conf/config.yml), templated as `MONGODB_HOST` / `MONGODB_USER` into the service environment file |
+
+The connection string is built in **[application.properties](src/main/resources/application.properties)** from those parts:
 
 ```
-### MongoDb Data source configuration
-spring.data.mongodb.uri=mongodb+srv://mongodb:${MONGODB_PASSWORD}@windfire.rxdd4.mongodb.net/restaurants
+windfire.mongodb.host=${MONGODB_HOST}
+windfire.mongodb.user=${MONGODB_USER}
 spring.data.mongodb.database=restaurants
+spring.data.mongodb.uri=mongodb+srv://${windfire.mongodb.user}:${MONGODB_PASSWORD}@${windfire.mongodb.host}/${spring.data.mongodb.database}
 ```
 
-The connection string points to a MongoDB Atlas cluster; the `${MONGODB_PASSWORD}` placeholder is resolved from the `MONGODB_PASSWORD` environment variable, which is supplied either interactively by **[run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh)** when running locally, or via the encrypted systemd credential when [deployed to Raspberry Pi](#deploy-to-raspberry-pi).
+The same jar is promoted from dev to prod unchanged: only the host, user and password differ.
+
+- **Host and user** have no default in `application.properties`. A run that has neither the `dev` profile nor the
+  `MONGODB_HOST`/`MONGODB_USER` variables cannot resolve them, so it fails instead of silently connecting to the
+  other environment's database.
+- **The password** (`MONGODB_PASSWORD`) is never committed. Locally, [run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh) prompts for the **dev** password. On Raspberry, [deploy.sh](deploy.sh) prompts for the **prod** password, and the playbook stores it as an encrypted systemd credential (see [Deploy to Raspberry Pi](#deploy-to-raspberry-pi)).
+- The `dev` profile sets only `windfire.mongodb.host`/`user`, never `spring.data.mongodb.uri`. The context tests run
+  with profiles `{test, dev}` and must keep the localhost URI of `application-test.properties`, which
+  `MongoDevProfileTest` checks.
+
+The dev cluster holds a random sample of production restaurants, copied once when it was created. It is not kept in sync with prod.
 
 ### Implementing OAuth2 Authentication with Keycloak
 Keycloak is an Open Source Identity and Access Management technology that allows to add authentication mechanisms to applications, securing them with minimum effort.
@@ -470,9 +488,10 @@ run really means everything was checked (recommended before a deployment):
 ./run-tests.sh --env dev --strict
 ```
 
-**The writer tests create and then delete restaurants named `E2E-<timestamp>…` in the real MongoDB database**; if a
-run is interrupted, whatever it created is deleted on exit. Note that **dev and prod use the same MongoDB
-database** (same `spring.data.mongodb.uri`), so `--env dev` also writes to the production data. Each run also makes
+**The writer tests create and then delete restaurants named `E2E-<timestamp>…` in the MongoDB database of the
+environment under test**; if a run is interrupted, whatever it created is deleted on exit. Dev and prod use
+[separate clusters](#data-persistence-with-mongodb): `--env dev` writes only to the dev cluster, while a prod run
+writes to (and cleans up in) the production data. Each run also makes
 one deliberate wrong-password login for the reader user, which Keycloak records as a failed login.
 
 Once the application is running, the [Swagger UI](#api-documentation-with-swagger-ui--openapi) at `/swagger-ui.html` can also be used to explore and call every endpoint interactively, supplying a Bearer token obtained from Keycloak via its "Authorize" button.

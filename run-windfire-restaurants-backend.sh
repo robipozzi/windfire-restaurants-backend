@@ -76,7 +76,7 @@ inputKeycloakTruststorePassword()
 inputMongoDBPassword()
 {
     ###### Set MongoDB password
-    echo ${grn}Enter MongoDB password : ${end}
+    echo ${grn}Enter MongoDB dev password \(user windfire-dev-app on windfire-dev.dx6zesz.mongodb.net\) : ${end}
     read -s MONGODB_PWD
 }
 ####################################

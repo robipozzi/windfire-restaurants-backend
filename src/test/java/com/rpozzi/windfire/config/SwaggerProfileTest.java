@@ -1,7 +1,7 @@
 package com.rpozzi.windfire.config;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,13 +46,10 @@ class SwaggerProfileTest {
 	}
 
 	@Test
-	@DisplayName("The prod profile does not turn Swagger on")
-	@Does("Reads application-prod.properties → none of the Swagger switches is set to true (defaults stay off)")
-	void swaggerStaysOffWithProdProfile() throws IOException {
-		Properties prod = load("application-prod.properties");
-		assertNotEquals("true", prod.getProperty("springdoc.api-docs.enabled"));
-		assertNotEquals("true", prod.getProperty("springdoc.swagger-ui.enabled"));
-		assertNotEquals("true", prod.getProperty("windfire.swagger.public"));
+	@DisplayName("There is no prod profile")
+	@Does("application-prod.properties is not on the classpath: prod runs with no profile, so the defaults (Swagger off) apply")
+	void noProdProfile() {
+		assertNull(SwaggerProfileTest.class.getResource("/application-prod.properties"));
 	}
 
 }
