@@ -31,8 +31,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
@@ -76,11 +76,11 @@ class SecurityConfigTest {
 	private MockMvc mockMvc;
 	@Autowired
 	private JwtAuthenticationConverter jwtAuthenticationConverter;
-	@MockBean
+	@MockitoBean
 	private RestaurantService restaurantService;
 	// The production decoder discovers Keycloak's JWKS from the issuer; here it is replaced by an HMAC decoder
 	// that uses the same validator as production
-	@MockBean
+	@MockitoBean
 	private JwtDecoder jwtDecoder;
 
 	@BeforeEach

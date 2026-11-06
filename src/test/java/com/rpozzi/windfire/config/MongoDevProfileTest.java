@@ -6,7 +6,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.core.env.Environment;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.ActiveProfiles;
@@ -26,9 +26,9 @@ class MongoDevProfileTest {
 
 	@Autowired
 	private Environment environment;
-	@MockBean
+	@MockitoBean
 	private JwtDecoder jwtDecoder;
-	@MockBean
+	@MockitoBean
 	private IRestaurantRepository repository;
 
 	@Test
@@ -43,9 +43,9 @@ class MongoDevProfileTest {
 
 	@Test
 	@DisplayName("Tests never get an Atlas connection string")
-	@Does("with profiles {test, dev}, spring.data.mongodb.uri is still the localhost URI of application-test.properties")
+	@Does("with profiles {test, dev}, spring.mongodb.uri is still the localhost URI of application-test.properties")
 	void testUriIsNotOverriddenByDev() {
-		assertThat(environment.getProperty("spring.data.mongodb.uri")).isEqualTo("mongodb://localhost:27017/restaurants");
+		assertThat(environment.getProperty("spring.mongodb.uri")).isEqualTo("mongodb://localhost:27017/restaurants");
 	}
 
 }

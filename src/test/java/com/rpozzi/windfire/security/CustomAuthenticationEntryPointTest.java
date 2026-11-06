@@ -14,8 +14,8 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.server.resource.BearerTokenErrors;
 import org.springframework.security.oauth2.server.resource.InvalidBearerTokenException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import com.rpozzi.windfire.testsupport.Does;
 
 @DisplayName("Security · 401 response body")

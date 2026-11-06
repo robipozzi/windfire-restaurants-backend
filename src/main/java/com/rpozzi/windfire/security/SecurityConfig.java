@@ -8,7 +8,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ssl.SslBundles;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -98,7 +98,7 @@ public class SecurityConfig {
 	 */
 	@Bean
 	JwtDecoder jwtDecoder(RestTemplateBuilder restTemplateBuilder, SslBundles sslBundles) {
-		RestTemplate keycloakRestTemplate = restTemplateBuilder.setSslBundle(sslBundles.getBundle(KEYCLOAK_SSL_BUNDLE)).build();
+		RestTemplate keycloakRestTemplate = restTemplateBuilder.sslBundle(sslBundles.getBundle(KEYCLOAK_SSL_BUNDLE)).build();
 		NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withIssuerLocation(issuerUri)
 				.restOperations(keycloakRestTemplate)
 				.build();

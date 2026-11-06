@@ -163,12 +163,17 @@ As said in the introduction, the code for this application is based on:
 <dependencies>
 	<dependency>
 		<groupId>org.springframework.boot</groupId>
-		<artifactId>spring-boot-starter-web</artifactId>
+		<artifactId>spring-boot-starter-webmvc</artifactId>
 	</dependency>
 	<!-- ############# START - ENABLE OAUTH2 SECURITY ############# -->
 	<dependency>
 		<groupId>org.springframework.boot</groupId>
-		<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+		<artifactId>spring-boot-starter-security-oauth2-resource-server</artifactId>
+	</dependency>
+	<!-- RestTemplateBuilder, used by the JwtDecoder to call Keycloak with the "keycloak" SSL bundle -->
+	<dependency>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-restclient</artifactId>
 	</dependency>
 	<!-- ############# END - ENABLE OAUTH2 SECURITY ############# -->
 	<dependency>
@@ -180,8 +185,13 @@ As said in the introduction, the code for this application is based on:
 		<artifactId>spring-boot-starter-actuator</artifactId>
 	</dependency>
 	<dependency>
-		<groupId>org.springframework.boot</groupId>	
-		<artifactId>spring-boot-starter-test</artifactId>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-webmvc-test</artifactId>
+		<scope>test</scope>
+	</dependency>
+	<dependency>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-security-oauth2-resource-server-test</artifactId>
 		<scope>test</scope>
 	</dependency>
 	<!-- ############# START - SWAGGER UI / OPENAPI ############# -->
@@ -193,13 +203,13 @@ As said in the introduction, the code for this application is based on:
 </dependencies>
 ```
 
-- **Spring Boot 3.2.1**: the usage of Spring Boot framework v3.2.1, with all its implicit dependencies, is declared in the same **[POM](pom.xml)**; as any Spring Boot application, it has a specific configuration file called **[application.properties](src/main/resources/application.properties)**
+- **Spring Boot 4.1.2**: the usage of Spring Boot framework v4.1.2, with all its implicit dependencies, is declared in the same **[POM](pom.xml)**; as any Spring Boot application, it has a specific configuration file called **[application.properties](src/main/resources/application.properties)**
 
 ```xml
 <parent>
 	<groupId>org.springframework.boot</groupId>
 	<artifactId>spring-boot-starter-parent</artifactId>
-	<version>3.2.1</version>
+	<version>4.1.2</version>
 	<relativePath/> <!-- lookup parent from repository -->
 </parent>
 ```
@@ -259,8 +269,8 @@ The connection string is built in **[application.properties](src/main/resources/
 ```
 windfire.mongodb.host=${MONGODB_HOST}
 windfire.mongodb.user=${MONGODB_USER}
-spring.data.mongodb.database=restaurants
-spring.data.mongodb.uri=mongodb+srv://${windfire.mongodb.user}:${MONGODB_PASSWORD}@${windfire.mongodb.host}/${spring.data.mongodb.database}
+spring.mongodb.database=restaurants
+spring.mongodb.uri=mongodb+srv://${windfire.mongodb.user}:${MONGODB_PASSWORD}@${windfire.mongodb.host}/${spring.mongodb.database}
 ```
 
 The same jar is promoted from dev to prod unchanged: only the host, user and password differ.
@@ -269,7 +279,7 @@ The same jar is promoted from dev to prod unchanged: only the host, user and pas
   `MONGODB_HOST`/`MONGODB_USER` variables cannot resolve them, so it fails instead of silently connecting to the
   other environment's database.
 - **The password** (`MONGODB_PASSWORD`) is never committed. Locally, [run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh) prompts for the **dev** password. On Raspberry, [deploy.sh](deploy.sh) prompts for the **prod** password, and the playbook stores it as an encrypted systemd credential (see [Deploy to Raspberry Pi](#deploy-to-raspberry-pi)).
-- The `dev` profile sets only `windfire.mongodb.host`/`user`, never `spring.data.mongodb.uri`. The context tests run
+- The `dev` profile sets only `windfire.mongodb.host`/`user`, never `spring.mongodb.uri`. The context tests run
   with profiles `{test, dev}` and must keep the localhost URI of `application-test.properties`, which
   `MongoDevProfileTest` checks.
 
@@ -397,7 +407,7 @@ spring.ssl.bundle.pem.keycloak.truststore.certificate=file:${HOME_DIR}/opt/keycl
 ```
 
 The `JwtDecoder` bean in **[SecurityConfig.java](src/main/java/com/rpozzi/windfire/security/SecurityConfig.java)**
-builds its `RestTemplate` with `RestTemplateBuilder.setSslBundle(...)` on that bundle and passes it to
+builds its `RestTemplate` with `RestTemplateBuilder.sslBundle(...)` on that bundle and passes it to
 `NimbusJwtDecoder.withIssuerLocation(...)`, so both the OIDC discovery call and the JWKS fetch trust the
 Windfire Keycloak Root CA. Nothing else uses the bundle: the JVM default trust (the JDK `cacerts`) is left
 untouched, so MongoDB Atlas, whose certificate is signed by a public CA, and any other outbound TLS
