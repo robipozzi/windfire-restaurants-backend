@@ -1,5 +1,5 @@
 /.m2
-/.mvn
+/.mvn/wrapper/maven-wrapper.jar
 /.classpath
 /.project
 /.settings

@@ -1,11 +1,14 @@
 # Windfire Restaurants application backend
 
+[![CI](https://github.com/robipozzi/windfire-restaurants-backend/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/robipozzi/windfire-restaurants-backend/actions/workflows/ci.yml)
+
 ## Table of Contents
 - [Introduction](#introduction)
 - [Requirements](#requirements)
 - [Run](#run)
     - [Stop the application](#stop-the-application)
 - [Deploy to Raspberry Pi](#deploy-to-raspberry-pi)
+- [Continuous integration and dependency monitoring](#continuous-integration-and-dependency-monitoring)
 - [How the application works](#how-the-application-works)
     - [Layered architecture](#layered-architecture)
     - [REST API](#rest-api)
@@ -77,6 +80,22 @@ To remove the application from the Pi, run the companion uninstall playbook:
 ansible-playbook -K deployment/raspberry/windfire-restaurants-uninstall.yaml
 ```
 which stops and disables the systemd service, removes its unit file, and deletes the deployed application directory.
+
+## Continuous integration and dependency monitoring
+**[ci.yml](.github/workflows/ci.yml)** runs `./mvnw -B verify` on Java 17 for every pull request and every push to `main`. The badge at the top of this page shows the result for `main`; because the repository is private, it only renders for viewers who have access to it.
+
+**[dependabot.yml](.github/dependabot.yml)** checks Maven dependencies and GitHub Actions weekly. Minor and patch updates are grouped into one pull request per ecosystem, with at most 5 open pull requests per ecosystem.
+
+To read Dependabot alerts, open the repository's **Security > Dependabot** tab, or run:
+```bash
+gh api repos/robipozzi/windfire-restaurants-backend/dependabot/alerts
+```
+
+**An empty alert list does not mean the dependencies are free of known vulnerabilities:**
+- Alerts only cover the direct entries of **[pom.xml](pom.xml)**. GitHub does not see the versions managed by the Spring Boot parent, or any transitive dependency.
+- `./mvnw -B verify` builds and tests the application, but runs no vulnerability audit.
+
+The workflow also defines a dependency review job (`actions/dependency-review-action`, failing on `high` severity). It is skipped while the repository is private, because GitHub only offers dependency review on private repositories with Advanced Security.
 
 ## How the application works
 
