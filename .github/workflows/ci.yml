@@ -2,30 +2,54 @@ name: CI
 
 on:
   pull_request:
+    branches:
+      - main
+      - fix/dependabot-alerts
   push:
-    branches: [main]
+    branches:
+      - main
+      - fix/dependabot-alerts
 
 permissions:
   contents: read
 
 jobs:
-  build:
+  node:
+    name: Node.js
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          distribution: temurin
-          java-version: '17'
-          cache: maven
-      - run: ./mvnw -B verify
+          persist-credentials: false
+
+      # Same major version as the Raspberry Pi (nodejs_version in
+      # deployment/raspberry/conf/config.yaml)
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test -- --watchAll=false
+
+      - name: Audit dependencies
+        run: npm audit --omit=dev --audit-level=high
 
   dependency-review:
-    # GitHub only offers dependency review on private repositories with Advanced Security
-    if: github.event_name == 'pull_request' && github.event.repository.private == false
+    name: Dependency review
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
           fail-on-severity: high
