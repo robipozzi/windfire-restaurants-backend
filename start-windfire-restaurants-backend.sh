@@ -3,7 +3,7 @@ source ./setenv.sh
 ######################################
 ###### Variable section - START ######
 ######################################
-SCRIPT=run-windfire-restaurants-backend.sh
+SCRIPT=start-windfire-restaurants-backend.sh
 JAR_NAME=windfire-restaurants-backend
 VERSION=0.0.1-SNAPSHOT
 MONGODB_PWD=

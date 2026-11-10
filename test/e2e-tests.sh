@@ -6,11 +6,13 @@
 # MongoDB database the backend under test is connected to: the dev cluster for dev, the PROD data for prod.
 #
 # Configuration (environment variables, defaults from setenv.sh):
-#   WF_ENV               environment under test: prod or dev (prod)
+#   WF_ENV               environment under test: prod, dev or test (prod)
 #                          prod = Raspberry deployment, no Spring profile: Swagger must be private
-#                          dev  = local backend started by run-windfire-restaurants-backend.sh with the
-#                                 dev profile: Swagger must be public
-#   WF_BASE_URL          backend base URL                  (prod: https://raspberry02:8081, dev: https://localhost:8081)
+#                          dev  = local backend with the dev profile (started by ../run-tests.sh, or by
+#                                 start-windfire-restaurants-backend.sh): Swagger must be public
+#                          test = not configured yet: the live tests are skipped (fail with WF_STRICT=true)
+#                                 unless WF_BASE_URL is set, in which case it is tested like prod
+#   WF_BASE_URL          backend base URL                  (prod: https://raspberry02:8081, dev: https://localhost:8081, test: none)
 #   WF_CACERT            Windfire Root CA for the backend  ($DEFAULT_ROOT_CA_TRUSTSTORE_DIR/$DEFAULT_ROOT_CA_CERTIFICATE)
 #   WF_KEYCLOAK_URL      Keycloak base URL                 (https://raspberry01:8443)
 #   WF_KEYCLOAK_CACERT   Keycloak Root CA                  ($DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_ROOT_CA_CERTIFICATE)
@@ -45,7 +47,12 @@ case $WF_ENV in
 	       DEFAULT_ALLOWED_ORIGIN=https://localhost
 	       SWAGGER_PUBLIC=true
 		;;
-	*)     echo "${red}WF_ENV must be prod or dev, not '$WF_ENV'${end}"
+	# Not configured yet: no default backend; with WF_BASE_URL set it is tested like prod
+	test)  DEFAULT_BASE_URL=
+	       DEFAULT_ALLOWED_ORIGIN=
+	       SWAGGER_PUBLIC=false
+		;;
+	*)     echo "${red}WF_ENV must be prod, dev or test, not '$WF_ENV'${end}"
 	       exit 2
 		;;
 esac
@@ -89,6 +96,13 @@ main()
 {
 	trap cleanup EXIT
 	mkdir -p "$(dirname "$WF_RESULTS_FILE")"
+	if [ -z "$WF_BASE_URL" ]; then
+		echo "${blu}Env      : $WF_ENV (not configured)${end}"
+		area "Live API [$WF_ENV] · Environment"
+		runTest "Environment is configured" \
+			"Check that the $WF_ENV environment has a backend to test (WF_BASE_URL)" testEnvConfigured
+		exit 0
+	fi
 	if [ "$WF_STRICT" == "true" ]; then
 		echo "${blu}Env      : $WF_ENV (strict: tests that cannot run for missing credentials fail)${end}"
 	else
@@ -399,6 +413,13 @@ restaurantJson()
 	} + (if $id == "" then {} else {id: $id} end)'
 }
 
+# Only reached when WF_BASE_URL is empty: the environment has no backend to test yet (3 = not verified)
+testEnvConfigured()
+{
+	RESULT_MESSAGE="the $WF_ENV environment is not configured yet: set WF_BASE_URL (and WF_ALLOWED_ORIGIN) to test it"
+	return 3
+}
+
 testTls()
 {
 	if [ ! -f "$WF_CACERT" ]; then
@@ -413,7 +434,7 @@ testTls()
 			*"curl: (6)"*|*"curl: (7)"*|*"curl: (28)"*) BACKEND_UNREACHABLE=true ;;
 		esac
 		if [ "$WF_ENV" == "dev" ]; then
-			RESULT_MESSAGE="$RESULT_MESSAGE (is the local backend running? start it with ./run-windfire-restaurants-backend.sh)"
+			RESULT_MESSAGE="$RESULT_MESSAGE (is the local backend running? start it with ./start-windfire-restaurants-backend.sh)"
 		fi
 		return 1
 	fi

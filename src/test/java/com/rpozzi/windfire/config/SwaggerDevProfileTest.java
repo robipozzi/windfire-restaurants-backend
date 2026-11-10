@@ -19,7 +19,7 @@ import com.rpozzi.windfire.restaurants.entities.IRestaurantRepository;
 import com.rpozzi.windfire.testsupport.Does;
 
 /**
- * The application as started locally by run-windfire-restaurants-backend.sh (dev profile).
+ * The application as started locally by start-windfire-restaurants-backend.sh (dev profile).
  */
 @SpringBootTest(classes = WindfireApplication.class)
 @AutoConfigureMockMvc
