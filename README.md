@@ -48,7 +48,7 @@ Once requirements are met, one can build and run the application with the follow
 
 A convenient script **[build.sh](build.sh)** is provided to build the application from source code.
 
-Another script **[run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh)** is provided to run the application, once it has been built. It interactively prompts for the Keycloak server host/port, the allowed CORS origins (default `https://localhost`) and the MongoDB **dev** password (user `windfire-dev-app`), exports them as environment variables consumed by **[application.properties](src/main/resources/application.properties)**, and starts the JVM in the background. It stops early if the Windfire Keycloak Root CA certificate is missing, see [Keycloak client trust (outbound TLS)](#keycloak-client-trust-outbound-tls).
+Another script **[start-windfire-restaurants-backend.sh](start-windfire-restaurants-backend.sh)** is provided to run the application, once it has been built. It interactively prompts for the Keycloak server host/port, the allowed CORS origins (default `https://localhost`) and the MongoDB **dev** password (user `windfire-dev-app`), exports them as environment variables consumed by **[application.properties](src/main/resources/application.properties)**, and starts the JVM in the background. It stops early if the Windfire Keycloak Root CA certificate is missing, see [Keycloak client trust (outbound TLS)](#keycloak-client-trust-outbound-tls).
 
 ### Stop the application
 **[stop-windfire-restaurants-backend.sh](stop-windfire-restaurants-backend.sh)** looks up the running `windfire-restaurants-backend` process, sends it a graceful `kill`, waits up to 10 seconds for it to shut down, and force-kills it (`kill -9`) if it hasn't stopped by then.
@@ -250,7 +250,7 @@ springdoc.swagger-ui.path=/swagger-ui.html
 springdoc.swagger-ui.operationsSorter=method
 ```
 
-Swagger UI and the OpenAPI document are **off by default**: `springdoc.api-docs.enabled`, `springdoc.swagger-ui.enabled` and `windfire.swagger.public` are `false` in **[application.properties](src/main/resources/application.properties)**, so the Raspberry deployment, which runs with no Spring profile, does not serve them. The `dev` profile in **[application-dev.properties](src/main/resources/application-dev.properties)** turns them on, and `run-windfire-restaurants-backend.sh` starts the application with `--spring.profiles.active=dev`.
+Swagger UI and the OpenAPI document are **off by default**: `springdoc.api-docs.enabled`, `springdoc.swagger-ui.enabled` and `windfire.swagger.public` are `false` in **[application.properties](src/main/resources/application.properties)**, so the Raspberry deployment, which runs with no Spring profile, does not serve them. The `dev` profile in **[application-dev.properties](src/main/resources/application-dev.properties)** turns them on, and `start-windfire-restaurants-backend.sh` starts the application with `--spring.profiles.active=dev`.
 
 With the `dev` profile, the interactive Swagger UI is available at `/swagger-ui.html` and the raw OpenAPI document at `/v3/api-docs`. Because `windfire.swagger.public=true`, **[SecurityConfig](src/main/java/com/rpozzi/windfire/security/SecurityConfig.java)** lets both paths through without an OAuth2 Bearer token, while every other endpoint (e.g. `/restaurants`) still requires authentication - Swagger UI lets you supply a Bearer token via the "Authorize" button to call those protected endpoints interactively.
 
@@ -261,7 +261,7 @@ Dev and prod use **two separate MongoDB Atlas clusters**, each with its own data
 
 | Environment | Started by | Atlas host | User | Where host/user come from |
 |---|---|---|---|---|
-| dev | [run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh) (`dev` profile) | `windfire-dev.dx6zesz.mongodb.net` (project `windfire-dev`) | `windfire-dev-app` | [application-dev.properties](src/main/resources/application-dev.properties) |
+| dev | [start-windfire-restaurants-backend.sh](start-windfire-restaurants-backend.sh) (`dev` profile) | `windfire-dev.dx6zesz.mongodb.net` (project `windfire-dev`) | `windfire-dev-app` | [application-dev.properties](src/main/resources/application-dev.properties) |
 | prod | [deploy.sh](deploy.sh) → systemd on `raspberry02` (no profile) | `windfire.rxdd4.mongodb.net` | `windfire-prod-app` | `mongodb_host` / `mongodb_user` in [config.yml](deployment/raspberry/conf/config.yml), templated as `MONGODB_HOST` / `MONGODB_USER` into the service environment file |
 
 The connection string is built in **[application.properties](src/main/resources/application.properties)** from those parts:
@@ -278,7 +278,7 @@ The same jar is promoted from dev to prod unchanged: only the host, user and pas
 - **Host and user** have no default in `application.properties`. A run that has neither the `dev` profile nor the
   `MONGODB_HOST`/`MONGODB_USER` variables cannot resolve them, so it fails instead of silently connecting to the
   other environment's database.
-- **The password** (`MONGODB_PASSWORD`) is never committed. Locally, [run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh) prompts for the **dev** password. On Raspberry, [deploy.sh](deploy.sh) prompts for the **prod** password, and the playbook stores it as an encrypted systemd credential (see [Deploy to Raspberry Pi](#deploy-to-raspberry-pi)).
+- **The password** (`MONGODB_PASSWORD`) is never committed. Locally, [start-windfire-restaurants-backend.sh](start-windfire-restaurants-backend.sh) prompts for the **dev** password. On Raspberry, [deploy.sh](deploy.sh) prompts for the **prod** password, and the playbook stores it as an encrypted systemd credential (see [Deploy to Raspberry Pi](#deploy-to-raspberry-pi)).
 - The `dev` profile sets only `windfire.mongodb.host`/`user`, never `spring.mongodb.uri`. The context tests run
   with profiles `{test, dev}` and must keep the localhost URI of `application-test.properties`, which
   `MongoDevProfileTest` checks.
@@ -418,7 +418,7 @@ There is no JKS truststore, no truststore password and no `-Djavax.net.ssl.trust
 prerequisite is the CA certificate itself at `~/opt/keycloak/ssl/truststore/WindfireKeycloakRootCA.crt`
 (`$DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_ROOT_CA_CERTIFICATE` in **[setenv.sh](setenv.sh)**),
 created by `windfire-security/keycloak/security/setupTLS.sh`. Both
-**[run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh)** and **[deploy.sh](deploy.sh)**
+**[start-windfire-restaurants-backend.sh](start-windfire-restaurants-backend.sh)** and **[deploy.sh](deploy.sh)**
 stop early if it is missing. When Keycloak's CA changes, replace the file and restart (or redeploy) the
 application. When [deployed to Raspberry Pi](#deploy-to-raspberry-pi), the playbook copies the certificate
 (mode `0644`, it is public) to the same path under `/home/pi`, where `HOME_DIR` points.
@@ -434,24 +434,36 @@ IP address or another name. It must also match the issuer Keycloak advertises
 does and whether it passed, then a summary per area with pass/fail/skip counts and the list of failures.
 
 ```
-./run-tests.sh                  # all JUnit tests (no running server needed)
+./run-tests.sh                  # asks for the environment (dev/test/prod), then JUnit + live tests on it
 ./run-tests.sh --only Security  # only the JUnit classes whose name contains "Security"
-./run-tests.sh --e2e            # JUnit tests, then the live end-to-end tests
-./run-tests.sh --e2e-only       # only the live end-to-end tests
-./run-tests.sh --env dev        # JUnit tests, then the live tests on the local backend (before deploying)
+./run-tests.sh --e2e            # JUnit tests, then the live end-to-end tests (asks for the environment)
+./run-tests.sh --e2e-only       # only the live end-to-end tests (asks for the environment)
+./run-tests.sh --env dev        # JUnit tests, then the live tests on a local backend (before deploying)
 ./run-tests.sh --env prod       # JUnit tests, then the live tests on the Raspberry deployment
 ```
 
-`--env` chooses the environment the live tests run against (it implies `--e2e`; without it the live tests target `prod`):
+`--env` chooses the environment the live tests run against (it implies `--e2e`). Without it the script asks;
+without a terminal (CI, pipes) a run with no options runs the JUnit tests only, and `--e2e` targets `prod`.
 
-| | `prod` | `dev` |
-|---|---|---|
-| Backend | `https://raspberry02:8081` (deployed, no Spring profile) | `https://localhost:8081` (started by [run-windfire-restaurants-backend.sh](run-windfire-restaurants-backend.sh) with the `dev` profile) |
-| CORS origin tested | `https://raspberry01:9443` | `https://localhost` |
-| Swagger | must require a token | API docs and Swagger UI must be public |
+| | `dev` | `test` | `prod` |
+|---|---|---|---|
+| Backend | `https://localhost:8081`, `dev` profile, **started and stopped by the script** | not configured yet: live tests skipped (set `WF_BASE_URL` to test a server) | `https://raspberry02:8081` (deployed, no Spring profile) |
+| CORS origin tested | `https://localhost` | `WF_ALLOWED_ORIGIN` | `https://raspberry01:9443` |
+| Swagger | API docs and Swagger UI must be public | must require a token | must require a token |
 
-Keycloak and the Windfire Root CA are the same for both. If the backend cannot be reached, the first test fails
-with the reason and the remaining live tests are skipped.
+On `dev`, if a backend already answers on `https://localhost:8081` it is used and left running. Otherwise the script
+packages `target/windfire-restaurants-backend-0.0.1-SNAPSHOT.jar` if it is missing or older than the sources,
+starts it in background with the same settings as
+[start-windfire-restaurants-backend.sh](start-windfire-restaurants-backend.sh) (log in
+`target/test-results/backend.log`), waits until it answers and, when the live tests end (or fail, or are
+interrupted), stops **only the process it started**. Its settings:
+- `WF_MONGODB_PASSWORD` - MongoDB dev password, prompted if unset and a terminal is attached
+- `WF_KEYCLOAK_HOST` / `WF_KEYCLOAK_PORT` - Keycloak the backend trusts (default `raspberry01:8443`)
+- `WF_BACKEND_START_TIMEOUT` - seconds to wait for it to answer (default 120)
+- `--no-start` never starts it (fails if none is running); `--keep-backend` leaves it running after the tests.
+
+Keycloak and the Windfire Root CA are the same for every environment. If the backend cannot be reached, the
+first test fails with the reason and the remaining live tests are skipped.
 
 Exit code is 0 when everything passed, 1 when a test failed and 2 when the tests could not run (missing tool,
 build error). The per-test results are written to `target/test-results/results.tsv` and the full Maven output to
