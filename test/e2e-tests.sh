@@ -8,7 +8,7 @@
 # Configuration (environment variables, defaults from setenv.sh):
 #   WF_ENV               environment under test: prod or dev (prod)
 #                          prod = Raspberry deployment, no Spring profile: Swagger must be private
-#                          dev  = local backend started by run-windfire-restaurants-backend.sh with the
+#                          dev  = local backend started by start-windfire-restaurants-backend.sh with the
 #                                 dev profile: Swagger must be public
 #   WF_BASE_URL          backend base URL                  (prod: https://raspberry02:8081, dev: https://localhost:8081)
 #   WF_CACERT            Windfire Root CA for the backend  ($DEFAULT_ROOT_CA_TRUSTSTORE_DIR/$DEFAULT_ROOT_CA_CERTIFICATE)
@@ -413,7 +413,7 @@ testTls()
 			*"curl: (6)"*|*"curl: (7)"*|*"curl: (28)"*) BACKEND_UNREACHABLE=true ;;
 		esac
 		if [ "$WF_ENV" == "dev" ]; then
-			RESULT_MESSAGE="$RESULT_MESSAGE (is the local backend running? start it with ./run-windfire-restaurants-backend.sh)"
+			RESULT_MESSAGE="$RESULT_MESSAGE (is the local backend running? start it with ./start-windfire-restaurants-backend.sh)"
 		fi
 		return 1
 	fi

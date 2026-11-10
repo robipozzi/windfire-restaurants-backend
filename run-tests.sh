@@ -47,7 +47,7 @@ printHelp()
 	echo "  --e2e-only         only the live end-to-end tests"
 	echo "  --env <prod|dev>   environment the live tests run against (implies --e2e, default prod):"
 	echo "                       prod = Raspberry deployment ($DEFAULT_APPLICATION_SERVER_HOST:$DEFAULT_APPLICATION_SERVER_PORT, no profile, Swagger private)"
-	echo "                       dev  = local run-windfire-restaurants-backend.sh (localhost:$DEFAULT_APPLICATION_SERVER_PORT, dev profile, Swagger public)"
+	echo "                       dev  = local start-windfire-restaurants-backend.sh (localhost:$DEFAULT_APPLICATION_SERVER_PORT, dev profile, Swagger public)"
 	echo "  --strict           live tests that cannot run for missing credentials FAIL instead of SKIP"
 	echo "                     (use it before deploying: a PASSED run then means Keycloak and MongoDB were really checked)"
 	echo "  --only <pattern>   only the JUnit test classes whose name contains <pattern> (e.g. Security, Validation)"
