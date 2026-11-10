@@ -434,24 +434,36 @@ IP address or another name. It must also match the issuer Keycloak advertises
 does and whether it passed, then a summary per area with pass/fail/skip counts and the list of failures.
 
 ```
-./run-tests.sh                  # all JUnit tests (no running server needed)
+./run-tests.sh                  # asks for the environment (dev/test/prod), then JUnit + live tests on it
 ./run-tests.sh --only Security  # only the JUnit classes whose name contains "Security"
-./run-tests.sh --e2e            # JUnit tests, then the live end-to-end tests
-./run-tests.sh --e2e-only       # only the live end-to-end tests
-./run-tests.sh --env dev        # JUnit tests, then the live tests on the local backend (before deploying)
+./run-tests.sh --e2e            # JUnit tests, then the live end-to-end tests (asks for the environment)
+./run-tests.sh --e2e-only       # only the live end-to-end tests (asks for the environment)
+./run-tests.sh --env dev        # JUnit tests, then the live tests on a local backend (before deploying)
 ./run-tests.sh --env prod       # JUnit tests, then the live tests on the Raspberry deployment
 ```
 
-`--env` chooses the environment the live tests run against (it implies `--e2e`; without it the live tests target `prod`):
+`--env` chooses the environment the live tests run against (it implies `--e2e`). Without it the script asks;
+without a terminal (CI, pipes) a run with no options runs the JUnit tests only, and `--e2e` targets `prod`.
 
-| | `prod` | `dev` |
-|---|---|---|
-| Backend | `https://raspberry02:8081` (deployed, no Spring profile) | `https://localhost:8081` (started by [start-windfire-restaurants-backend.sh](start-windfire-restaurants-backend.sh) with the `dev` profile) |
-| CORS origin tested | `https://raspberry01:9443` | `https://localhost` |
-| Swagger | must require a token | API docs and Swagger UI must be public |
+| | `dev` | `test` | `prod` |
+|---|---|---|---|
+| Backend | `https://localhost:8081`, `dev` profile, **started and stopped by the script** | not configured yet: live tests skipped (set `WF_BASE_URL` to test a server) | `https://raspberry02:8081` (deployed, no Spring profile) |
+| CORS origin tested | `https://localhost` | `WF_ALLOWED_ORIGIN` | `https://raspberry01:9443` |
+| Swagger | API docs and Swagger UI must be public | must require a token | must require a token |
 
-Keycloak and the Windfire Root CA are the same for both. If the backend cannot be reached, the first test fails
-with the reason and the remaining live tests are skipped.
+On `dev`, if a backend already answers on `https://localhost:8081` it is used and left running. Otherwise the script
+packages `target/windfire-restaurants-backend-0.0.1-SNAPSHOT.jar` if it is missing or older than the sources,
+starts it in background with the same settings as
+[start-windfire-restaurants-backend.sh](start-windfire-restaurants-backend.sh) (log in
+`target/test-results/backend.log`), waits until it answers and, when the live tests end (or fail, or are
+interrupted), stops **only the process it started**. Its settings:
+- `WF_MONGODB_PASSWORD` - MongoDB dev password, prompted if unset and a terminal is attached
+- `WF_KEYCLOAK_HOST` / `WF_KEYCLOAK_PORT` - Keycloak the backend trusts (default `raspberry01:8443`)
+- `WF_BACKEND_START_TIMEOUT` - seconds to wait for it to answer (default 120)
+- `--no-start` never starts it (fails if none is running); `--keep-backend` leaves it running after the tests.
+
+Keycloak and the Windfire Root CA are the same for every environment. If the backend cannot be reached, the
+first test fails with the reason and the remaining live tests are skipped.
 
 Exit code is 0 when everything passed, 1 when a test failed and 2 when the tests could not run (missing tool,
 build error). The per-test results are written to `target/test-results/results.tsv` and the full Maven output to
