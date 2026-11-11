@@ -501,10 +501,10 @@ are not set are prompted for.
 
 **Keycloak client for the e2e tests.**
 The tests log in with the Resource Owner Password grant (`grant_type=password`). They use their own Keycloak client,
-**`windfire-e2e`**, and not `windfire`. `windfire` is the React SPA's public client: it uses Authorization Code + PKCE
+**`windfire-restaurants`**, and not `windfire`. `windfire` is the React SPA's public client: it uses Authorization Code + PKCE
 and has **Direct access grants Off**, so password logins on it are refused with `unauthorized_client`. Turning that
-setting back on would allow password logins on a public browser client again. Create `windfire-e2e` in realm
-`windfire`:
+setting back on would allow password logins on a public browser client again. `windfire-restaurants` already exists
+in realm `windfire` (it was a public client nothing used); it is made confidential for the tests. Configure it as follows:
 
 | Setting | Value |
 |---|---|
@@ -514,7 +514,7 @@ setting back on would allow password logins on a public browser client again. Cr
 | Direct access grants | **On** |
 | Redirect URIs / Web origins | empty |
 
-- **Audience**: *Client scopes → windfire-e2e-dedicated → Add mapper → By configuration → Audience*, with Included
+- **Audience**: *Client scopes → windfire-restaurants-dedicated → Add mapper → By configuration → Audience*, with Included
   Client Audience = `windfire-restaurants-api` and Add to access token = On. If `windfire` gets the audience from a
   shared client scope, assign that scope instead. Without it the tests fail with "aud lacks windfire-restaurants-api".
 - **Roles**: nothing to add. `resource_access.windfire-restaurants-api.roles` comes from the users' role mappings,

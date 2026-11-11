@@ -85,7 +85,7 @@ printHelp()
 	echo
 	echo "The live tests need Keycloak and create/delete one restaurant in the backend's MongoDB; they are"
 	echo "configured by WF_* environment variables, see the header of test/e2e-tests.sh. They log in with:"
-	echo "  WF_CLIENT_SECRET         secret of the windfire-e2e Keycloak client (prompted if unset and a terminal is attached)"
+	echo "  WF_CLIENT_SECRET         secret of the windfire-restaurants Keycloak client (prompted if unset and a terminal is attached)"
 	echo "  WF_*_PASSWORD            passwords of the reader, writer and no-role users (prompted likewise)"
 	echo "The dev backend is started from $BACKEND_JAR (rebuilt if older than the sources) with:"
 	echo "  WF_MONGODB_PASSWORD      MongoDB dev password (prompted if unset and a terminal is attached)"

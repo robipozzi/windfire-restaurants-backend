@@ -17,7 +17,7 @@
 #   WF_KEYCLOAK_URL      Keycloak base URL                 (https://raspberry01:8443)
 #   WF_KEYCLOAK_CACERT   Keycloak Root CA                  ($DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_ROOT_CA_CERTIFICATE)
 #   WF_REALM             Keycloak realm                    (windfire)
-#   WF_CLIENT_ID         Keycloak client used for login    (windfire-e2e)
+#   WF_CLIENT_ID         Keycloak client used for login    (windfire-restaurants)
 #                          a confidential client with Direct access grants On, dedicated to these tests;
 #                          NOT windfire: that is the React SPA's client (Authorization Code + PKCE),
 #                          which has no direct access grants (see README, "Keycloak client for the e2e tests")
@@ -65,7 +65,7 @@ WF_CACERT=${WF_CACERT:-$DEFAULT_ROOT_CA_TRUSTSTORE_DIR/$DEFAULT_ROOT_CA_CERTIFIC
 WF_KEYCLOAK_URL=${WF_KEYCLOAK_URL:-https://$DEFAULT_KEYCLOAK_HOST:$DEFAULT_KEYCLOAK_PORT}
 WF_KEYCLOAK_CACERT=${WF_KEYCLOAK_CACERT:-$DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_ROOT_CA_CERTIFICATE}
 WF_REALM=${WF_REALM:-windfire}
-WF_CLIENT_ID=${WF_CLIENT_ID:-windfire-e2e}
+WF_CLIENT_ID=${WF_CLIENT_ID:-windfire-restaurants}
 WF_API_CLIENT_ID=${WF_API_CLIENT_ID:-windfire-restaurants-api}
 WF_READER_USER=${WF_READER_USER:-windfire-reader}
 WF_WRITER_USER=${WF_WRITER_USER:-windfire}
