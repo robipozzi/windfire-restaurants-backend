@@ -496,8 +496,33 @@ the backend, MongoDB:
 - **CORS & Swagger** - allowed/unknown origin preflights; Swagger private on `prod`, public on `dev`.
 
 They are configured with `WF_*` environment variables (see the header of the script), whose defaults depend on the
-chosen environment; any of them (e.g. `WF_BASE_URL`) can be set to override it. Passwords that are not set are
-prompted for.
+chosen environment; any of them (e.g. `WF_BASE_URL`) can be set to override it. Passwords and the client secret that
+are not set are prompted for.
+
+**Keycloak client for the e2e tests.**
+The tests log in with the Resource Owner Password grant (`grant_type=password`). They use their own Keycloak client,
+**`windfire-restaurants`**, and not `windfire`. `windfire` is the React SPA's public client: it uses Authorization Code + PKCE
+and has **Direct access grants Off**, so password logins on it are refused with `unauthorized_client`. Turning that
+setting back on would allow password logins on a public browser client again. `windfire-restaurants` already exists
+in realm `windfire` (it was a public client nothing used); it is made confidential for the tests. Configure it as follows:
+
+| Setting | Value |
+|---|---|
+| Client type | OpenID Connect |
+| Client authentication | **On** (confidential: knowing the client id is not enough to use the password grant) |
+| Standard flow / Implicit / Service accounts / Device | Off |
+| Direct access grants | **On** |
+| Redirect URIs / Web origins | empty |
+
+- **Audience**: *Client scopes → windfire-restaurants-dedicated → Add mapper → By configuration → Audience*, with Included
+  Client Audience = `windfire-restaurants-api` and Add to access token = On. If `windfire` gets the audience from a
+  shared client scope, assign that scope instead. Without it the tests fail with "aud lacks windfire-restaurants-api".
+- **Roles**: nothing to add. `resource_access.windfire-restaurants-api.roles` comes from the users' role mappings,
+  through the default `roles` client scope.
+- **Secret**: copy it from the *Credentials* tab and pass it as **`WF_CLIENT_SECRET`**, or type it when prompted.
+  Never store it in the repository.
+
+To use another client, set `WF_CLIENT_ID` (and `WF_CLIENT_SECRET` if it is confidential).
 
 Without credentials the Keycloak, authorization and MongoDB tests cannot run: they are reported as skipped and
 the summary warns that they were **not verified**. Add **`--strict`** to make them fail instead, so that a PASSED
