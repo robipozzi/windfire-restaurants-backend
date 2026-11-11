@@ -17,7 +17,11 @@
 #   WF_KEYCLOAK_URL      Keycloak base URL                 (https://raspberry01:8443)
 #   WF_KEYCLOAK_CACERT   Keycloak Root CA                  ($DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_ROOT_CA_CERTIFICATE)
 #   WF_REALM             Keycloak realm                    (windfire)
-#   WF_CLIENT_ID         Keycloak client used for login    (windfire)
+#   WF_CLIENT_ID         Keycloak client used for login    (windfire-e2e)
+#                          a confidential client with Direct access grants On, dedicated to these tests;
+#                          NOT windfire: that is the React SPA's client (Authorization Code + PKCE),
+#                          which has no direct access grants (see README, "Keycloak client for the e2e tests")
+#   WF_CLIENT_SECRET     secret of WF_CLIENT_ID, prompted if unset and a terminal is attached
 #   WF_API_CLIENT_ID     client whose roles the API checks (windfire-restaurants-api)
 #   WF_READER_USER       user with restaurants-reader      (windfire-reader)
 #   WF_READER_PASSWORD   prompted if unset and a terminal is attached
@@ -61,7 +65,7 @@ WF_CACERT=${WF_CACERT:-$DEFAULT_ROOT_CA_TRUSTSTORE_DIR/$DEFAULT_ROOT_CA_CERTIFIC
 WF_KEYCLOAK_URL=${WF_KEYCLOAK_URL:-https://$DEFAULT_KEYCLOAK_HOST:$DEFAULT_KEYCLOAK_PORT}
 WF_KEYCLOAK_CACERT=${WF_KEYCLOAK_CACERT:-$DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_ROOT_CA_CERTIFICATE}
 WF_REALM=${WF_REALM:-windfire}
-WF_CLIENT_ID=${WF_CLIENT_ID:-windfire}
+WF_CLIENT_ID=${WF_CLIENT_ID:-windfire-e2e}
 WF_API_CLIENT_ID=${WF_API_CLIENT_ID:-windfire-restaurants-api}
 WF_READER_USER=${WF_READER_USER:-windfire-reader}
 WF_WRITER_USER=${WF_WRITER_USER:-windfire}
@@ -182,6 +186,10 @@ main()
 
 inputPasswords()
 {
+	if [ -z "$WF_CLIENT_SECRET" ] && [ -t 0 ]; then
+		echo ${cyn}Input secret of Keycloak client ${end}${mag}$WF_CLIENT_ID${end}${cyn} : ${end}
+		read -s WF_CLIENT_SECRET
+	fi
 	if [ -z "$WF_READER_PASSWORD" ] && [ -t 0 ]; then
 		echo ${cyn}Input password of Keycloak reader user ${end}${mag}$WF_READER_USER${end}${cyn} : ${end}
 		read -s WF_READER_PASSWORD
@@ -355,10 +363,31 @@ keycloakToken()
 		--cacert "$WF_KEYCLOAK_CACERT" --max-time 15 -o "$TMP_DIR/kc" -w '%{http_code}' \
 		-H "Content-Type: application/x-www-form-urlencoded" \
 		--data-urlencode "client_id=$WF_CLIENT_ID" \
+		${WF_CLIENT_SECRET:+--data-urlencode "client_secret=$WF_CLIENT_SECRET"} \
 		--data-urlencode "username=$1" \
 		--data-urlencode "password=$2" \
 		--data-urlencode "grant_type=password")
 	KC_BODY=$(cat "$TMP_DIR/kc" 2>/dev/null)
+}
+
+# keycloakClientProblem: when Keycloak refused the client itself (not the user), sets RESULT_MESSAGE
+# to what to fix and returns 0
+keycloakClientProblem()
+{
+	case "$(echo "$KC_BODY" | jq -r '.error // empty' 2>/dev/null)" in
+		unauthorized_client)
+			RESULT_MESSAGE="client $WF_CLIENT_ID does not allow direct access grants: use the dedicated test client (see README)"
+			;;
+		invalid_client)
+			if [ -z "$WF_CLIENT_SECRET" ]; then
+				RESULT_MESSAGE="Keycloak rejected client $WF_CLIENT_ID: WF_CLIENT_SECRET is not set (see README)"
+			else
+				RESULT_MESSAGE="Keycloak rejected client $WF_CLIENT_ID: WF_CLIENT_SECRET is wrong, or the client does not exist (see README)"
+			fi
+			;;
+		*)	return 1
+			;;
+	esac
 }
 
 # login <user> <password> <var>: stores the access token in <var>, fails with Keycloak's answer
@@ -368,6 +397,7 @@ login()
 	local token
 	token=$(echo "$KC_BODY" | jq -r '.access_token // empty' 2>/dev/null)
 	if [ -z "$token" ]; then
+		keycloakClientProblem && return 1
 		RESULT_MESSAGE="Keycloak answered HTTP $KC_STATUS for $1: $(echo "$KC_BODY" | jq -r '.error_description // .error // empty' 2>/dev/null)"
 		return 1
 	fi
@@ -461,6 +491,7 @@ testGarbageToken()
 testWrongPassword()
 {
 	keycloakToken "$WF_READER_USER" "e2e-wrong-password-$(date +%s)"
+	keycloakClientProblem && return 1
 	# OAuth2 answers a bad password grant with 400 invalid_grant (older Keycloak versions use 401)
 	if [ "$KC_STATUS" != "400" ] && [ "$KC_STATUS" != "401" ]; then
 		RESULT_MESSAGE="expected HTTP 400/401 from Keycloak but got $KC_STATUS ${KC_BODY:0:120}"
