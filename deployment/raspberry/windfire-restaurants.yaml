@@ -150,11 +150,42 @@
         name: windfire-restaurants-backend
         state: started
         enabled: yes
-    - name: Verify Windfire Restaurants backend is listening on port 8081
-      wait_for:
-        port: 8081
-        host: 127.0.0.1
-        timeout: 30
+    ##############################################################
+    ##### Windfire Restaurants backend health check section #####
+    ##############################################################
+    # A cold Spring Boot start on a Raspberry Pi 3 takes ~35-40 s to bind the port,
+    # so the timeout comes from windfirerestaurants_startup_timeout (conf/config.yml)
+    - name: Verify Windfire Restaurants backend startup
+      block:
+        - name: Verify Windfire Restaurants backend is listening on port {{ windfirerestaurants_port }}
+          wait_for:
+            port: "{{ windfirerestaurants_port }}"
+            host: 127.0.0.1
+            delay: 10
+            sleep: 2
+            timeout: "{{ windfirerestaurants_startup_timeout }}"
+        - name: Verify Windfire Restaurants backend service is still active
+          command: systemctl is-active windfire-restaurants-backend
+          changed_when: false
+      rescue:
+        - name: Collect Windfire Restaurants backend service status
+          command: systemctl status windfire-restaurants-backend --no-pager -l
+          register: windfire_service_status
+          changed_when: false
+          failed_when: false
+        - name: Collect last lines of Windfire Restaurants backend log
+          command: tail -n 60 {{ remote_windfirerestaurants_dir }}/logs/windfire-restaurants-backend.log
+          register: windfire_service_log
+          changed_when: false
+          failed_when: false
+        - name: Show Windfire Restaurants backend diagnostics
+          debug:
+            msg:
+              - "{{ windfire_service_status.stdout_lines }}"
+              - "{{ windfire_service_log.stdout_lines }}"
+        - name: Fail deployment
+          fail:
+            msg: "Windfire Restaurants backend did not become ready on port {{ windfirerestaurants_port }} within {{ windfirerestaurants_startup_timeout }}s - see diagnostics above"
   handlers:
     - name: reload systemd
       systemd:
