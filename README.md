@@ -448,7 +448,7 @@ without a terminal (CI, pipes) a run with no options runs the JUnit tests only, 
 | | `dev` | `test` | `prod` |
 |---|---|---|---|
 | Backend | `https://localhost:8081`, `dev` profile, **started and stopped by the script** | not configured yet: live tests skipped (set `WF_BASE_URL` to test a server) | `https://raspberry02:8081` (deployed, no Spring profile) |
-| CORS origin tested | `https://localhost` | `WF_ALLOWED_ORIGIN` | `https://raspberry01:9443` |
+| CORS origin tested | `https://localhost` | `WF_ALLOWED_ORIGIN` | `https://raspberry01:8445` |
 | Swagger | API docs and Swagger UI must be public | must require a token | must require a token |
 
 On `dev`, if a backend already answers on `https://localhost:8081` it is used and left running. Otherwise the script
