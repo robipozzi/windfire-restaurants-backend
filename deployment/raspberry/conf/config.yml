@@ -20,7 +20,7 @@ local_keycloak_truststore_dir: "{{ local_home_dir }}/opt/keycloak/ssl/truststore
 remote_keycloak_truststore_dir: "{{ remote_home_dir }}/opt/keycloak/ssl/truststore"
 # Windfire Keycloak Root CA, trusted only by the "keycloak" SSL bundle (application.properties)
 keycloak_root_ca_certificate: "WindfireKeycloakRootCA.crt"
-cors_allowed_origins: "https://raspberry01:9443"
+cors_allowed_origins: "https://raspberry01:8445"
 # MongoDB prod cluster (non-secret); the password is prompted by deploy.sh and stored with systemd-creds
 mongodb_host: "windfire.rxdd4.mongodb.net"
 mongodb_user: "windfire-prod-app"
