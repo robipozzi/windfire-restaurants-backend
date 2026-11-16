@@ -89,7 +89,32 @@ which stops and disables the systemd service, removes its unit file, and deletes
 - **Local runs**: `logging.file.name` is not set, so Spring Boot writes no log file and logs to the console only.
 
 ## Continuous integration and dependency monitoring
-**[ci.yml](.github/workflows/ci.yml)** runs `./mvnw -B verify` on Java 17 for every pull request and every push to `main`. The badge at the top of this page shows the result for `main`; because the repository is private, it only renders for viewers who have access to it.
+**[ci.yml](.github/workflows/ci.yml)** runs on every pull request and every push to `main`, every Monday at 06:30 UTC, and on demand (**Actions > CI > Run workflow**). It has two jobs:
+- **Build and test (Java 17)** runs `./mvnw -B verify`.
+- **Vulnerability audit** scans the dependencies with [OSV-Scanner](https://google.github.io/osv-scanner/), described below.
+
+The badge at the top of this page shows the result for `main`; because the repository is private, it only renders for viewers who have access to it.
+
+### Vulnerability audit
+OSV-Scanner resolves the full dependency tree of **[pom.xml](pom.xml)** itself, including the versions managed by the Spring Boot parent and all transitive dependencies, and checks them against the [OSV](https://osv.dev) database. It does not depend on GitHub's dependency graph.
+- The job **fails on high or critical findings**: CVSS score 7.0 or higher, or an advisory rated `HIGH`/`CRITICAL` when it has no score. Findings below high only produce a warning.
+- The weekly run exists because new vulnerabilities are published without any change to the code, so a red run on Monday may need no commit to explain it. Enable GitHub's notifications for failed workflows to see it.
+- To read the results, open the failed run and the **Fail on high or critical findings** step: it lists every finding with its package, version, advisory IDs and CVSS score.
+
+To run the same scan locally:
+```bash
+osv-scanner scan source -L pom.xml
+```
+
+When a finding cannot be fixed by a dependency bump (for example a version property in **[pom.xml](pom.xml)**) and does not apply here, ignore it with an entry in `osv-scanner.toml` next to `pom.xml`. Always give a reason and an expiry date, so it is looked at again:
+```toml
+[[IgnoredVulns]]
+id = "GHSA-xxxx-xxxx-xxxx"
+effectiveUntil = 2027-01-31
+reason = "Why it does not apply to this application"
+```
+
+### Dependabot
 
 **[dependabot.yml](.github/dependabot.yml)** checks Maven dependencies and GitHub Actions weekly. Minor and patch updates are grouped into one pull request per ecosystem, with at most 5 open pull requests per ecosystem.
 
@@ -98,11 +123,7 @@ To read Dependabot alerts, open the repository's **Security > Dependabot** tab, 
 gh api repos/robipozzi/windfire-restaurants-backend/dependabot/alerts
 ```
 
-**An empty alert list does not mean the dependencies are free of known vulnerabilities:**
-- Alerts only cover the direct entries of **[pom.xml](pom.xml)**. GitHub does not see the versions managed by the Spring Boot parent, or any transitive dependency.
-- `./mvnw -B verify` builds and tests the application, but runs no vulnerability audit.
-
-The workflow also defines a dependency review job (`actions/dependency-review-action`, failing on `high` severity). It is skipped while the repository is private, because GitHub only offers dependency review on private repositories with Advanced Security.
+**An empty alert list does not mean the dependencies are free of known vulnerabilities:** alerts only cover the direct entries of **[pom.xml](pom.xml)**. GitHub does not see the versions managed by the Spring Boot parent, or any transitive dependency. The [vulnerability audit](#vulnerability-audit) covers those.
 
 ## How the application works
 
