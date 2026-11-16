@@ -103,10 +103,16 @@
     ################################################################
     ##### Windfire Restaurants backend systemd service section #####
     ################################################################
+    # Owned by the service user: the application (not systemd) writes and rotates the log file.
+    # recurse also re-owns log files created by root when systemd wrote them (StandardOutput=append:).
     - name: Ensure "{{ remote_windfirerestaurants_dir }}/logs" remote directory exists
       file:
         path: "{{ remote_windfirerestaurants_dir }}/logs"
         state: directory
+        owner: "{{ user }}"
+        group: "{{ group }}"
+        mode: "0750"
+        recurse: yes
     - name: Template Windfire Restaurants backend environment file
       template:
         src: "{{ src_dir }}/templates/windfire-restaurants-backend.env.j2"

@@ -11,8 +11,10 @@ LoadCredentialEncrypted=windfire-restaurants-backend-secrets:/etc/credstore.encr
 ExecStart=/bin/bash -c 'set -a; source "$CREDENTIALS_DIRECTORY/windfire-restaurants-backend-secrets"; set +a; exec /usr/bin/java -jar {{ remote_windfirerestaurants_run_target_dir }}/{{ windfirerestaurants_app_jar }}'
 Restart=on-failure
 RestartSec=5
-StandardOutput=append:{{ remote_windfirerestaurants_dir }}/logs/windfire-restaurants-backend.log
-StandardError=append:{{ remote_windfirerestaurants_dir }}/logs/windfire-restaurants-backend.log
+# Spring Boot writes and rotates logs/windfire-restaurants-backend.log itself (LOGGING_FILE_NAME);
+# the console copy goes to journald, which rotates on its own.
+StandardOutput=journal
+StandardError=journal
 # Sandboxing. ProtectSystem=strict and ProtectHome=read-only make the whole filesystem
 # read-only; ReadWritePaths re-opens only the logs dir, the one place the service writes.
 NoNewPrivileges=yes
