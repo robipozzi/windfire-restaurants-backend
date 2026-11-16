@@ -1,6 +1,6 @@
 # Plan: Maven vulnerability audit with OSV-Scanner
 
-**Status:** not started. **Do this after** upgrading Spring Boot to a recent version.
+**Status:** done, 2026-11-16 (branch `fix/f17-osv-scanner`).
 Written 2026-11-06. Check the versions and tool behaviour below again before starting, as they will have moved.
 
 ## Why
@@ -72,6 +72,20 @@ In "Continuous integration and dependency monitoring":
 - Failing on any finding is strict, and I have not confirmed that the scanner has a severity threshold. Check this, and decide whether high and critical only is better.
 - A new CVE can turn the weekly run red with no code change. That is the purpose of the schedule, but enable GitHub's failed-workflow notifications so it gets seen.
 - Resolution uses the deps.dev API by default. `--data-source=native` queries Maven Central instead.
+
+## Outcome (2026-11-16)
+- Versions used: OSV-Scanner v2.7.1 through `google/osv-scanner-action` v2.7.1, pinned to a commit SHA.
+- Step 1 passed. `osv-scanner scan source -L pom.xml` resolves the Spring Boot parent: all 99 runtime dependencies from `./mvnw dependency:list -DincludeScope=runtime` come out with Maven's versions, plus 45 test-scope ones. The CycloneDX fallback (step 2) was not needed.
+- The scan of `main` (Spring Boot 4.1.2) finds no vulnerabilities, so there was nothing to triage (step 3) and the job is blocking from the start.
+- Severity threshold: OSV-Scanner has none and exits 1 on any finding. The job lets the scan step continue, then fails from the JSON report on findings with CVSS >= 7.0, or with a `HIGH`/`CRITICAL` advisory rating when there is no score. Lower findings give a warning.
+- Changes from step 4:
+  - The job is `Vulnerability audit` in `ci.yml`, not a separate `osv-scan.yml`. It runs on push, pull request, weekly (Monday 06:30 UTC) and manually.
+  - It uses the action (`osv-scanner-action/osv-scanner-action`, which needs only `contents: read`) instead of the CLI binary, so Dependabot updates its version.
+- The dependency-review job was removed from `ci.yml`.
+- In ignore entries, `ignoreUntil` is deprecated: use `effectiveUntil`.
+- Still to do from "Done when", after the push:
+  - a throwaway PR with a vulnerable dependency fails the job;
+  - the first weekly run shows in the Actions tab.
 
 ## References
 - [OSV-Scanner supported languages and lockfiles](https://google.github.io/osv-scanner/supported-languages-and-lockfiles/)
