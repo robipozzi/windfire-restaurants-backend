@@ -6,13 +6,16 @@
 # MongoDB database the backend under test is connected to: the dev cluster for dev, the PROD data for prod.
 #
 # Configuration (environment variables, defaults from setenv.sh):
-#   WF_ENV               environment under test: prod, dev or test (prod)
+#   WF_ENV               environment under test: dev, prod or test (dev)
 #                          prod = Raspberry deployment, no Spring profile: Swagger must be private
 #                          dev  = local backend with the dev profile (started by ../run-tests.sh, or by
 #                                 start-windfire-restaurants-backend.sh): Swagger must be public
 #                          test = not configured yet: the live tests are skipped (fail with WF_STRICT=true)
 #                                 unless WF_BASE_URL is set, in which case it is tested like prod
+#   WF_CONFIRM_PROD      yes → prod runs without asking; otherwise prod asks to type "prod" before any test,
+#                          and without a terminal a prod run is refused unless this is yes
 #   WF_BASE_URL          backend base URL                  (prod: https://raspberry02:8081, dev: https://localhost:8081, test: none)
+#                          with WF_ENV=dev it must point at localhost: a dev run never writes to the Raspberry
 #   WF_CACERT            Windfire Root CA for the backend  ($DEFAULT_ROOT_CA_TRUSTSTORE_DIR/$DEFAULT_ROOT_CA_CERTIFICATE)
 #   WF_KEYCLOAK_URL      Keycloak base URL                 (https://raspberry01:8443)
 #   WF_KEYCLOAK_CACERT   Keycloak Root CA                  ($DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_ROOT_CA_CERTIFICATE)
@@ -25,7 +28,7 @@
 #   WF_API_CLIENT_ID     client whose roles the API checks (windfire-restaurants-api)
 #   WF_READER_USER       user with restaurants-reader      (windfire-reader)
 #   WF_READER_PASSWORD   prompted if unset and a terminal is attached
-#   WF_WRITER_USER       user with restaurants-writer      (windfire)
+#   WF_WRITER_USER       user with restaurants-writer      (windfire-writer)
 #   WF_WRITER_PASSWORD   prompted if unset and a terminal is attached
 #   WF_NOROLE_USER       user with NO API role             (windfire-norole)
 #   WF_NOROLE_PASSWORD   prompted if unset and a terminal is attached
@@ -39,7 +42,7 @@ source ../setenv.sh
 ###### Variable section - START ######
 ######################################
 SCRIPT=e2e-tests.sh
-WF_ENV=${WF_ENV:-prod}
+WF_ENV=${WF_ENV:-dev}
 case $WF_ENV in
 	# Raspberry deployment: allowed origin from deployment/raspberry/conf/config.yml
 	prod)  DEFAULT_BASE_URL=https://$DEFAULT_APPLICATION_SERVER_HOST:$DEFAULT_APPLICATION_SERVER_PORT
@@ -68,7 +71,7 @@ WF_REALM=${WF_REALM:-windfire}
 WF_CLIENT_ID=${WF_CLIENT_ID:-windfire-restaurants}
 WF_API_CLIENT_ID=${WF_API_CLIENT_ID:-windfire-restaurants-api}
 WF_READER_USER=${WF_READER_USER:-windfire-reader}
-WF_WRITER_USER=${WF_WRITER_USER:-windfire}
+WF_WRITER_USER=${WF_WRITER_USER:-windfire-writer}
 WF_NOROLE_USER=${WF_NOROLE_USER:-windfire-norole}
 WF_ALLOWED_ORIGIN=${WF_ALLOWED_ORIGIN:-$DEFAULT_ALLOWED_ORIGIN}
 WF_STRICT=${WF_STRICT:-false}
@@ -114,6 +117,7 @@ main()
 	fi
 	echo "${blu}Backend  : $WF_BASE_URL${end}"
 	echo "${blu}Keycloak : $WF_KEYCLOAK_URL/realms/$WF_REALM (login client $WF_CLIENT_ID, API client $WF_API_CLIENT_ID)${end}"
+	guardEnvironment
 	inputPasswords
 
 	area "Live API [$WF_ENV] · TLS & health"
@@ -182,6 +186,54 @@ main()
 		runTest "API docs are not public on this server" \
 			"GET /v3/api-docs without a token → 401 (Swagger is only public with the dev profile)" testSwaggerNotPublic
 	fi
+}
+
+# urlHost <url>: prints the lowercase host of <url> (no scheme, user info, port or path; an IPv6 host without brackets)
+urlHost()
+{
+	local host=${1#*://}
+	host=${host%%/*}
+	host=${host##*@}
+	if [ "${host:0:1}" == "[" ]; then
+		host=${host#[}
+		host=${host%%]*}
+	else
+		host=${host%%:*}
+	fi
+	echo "$host" | tr '[:upper:]' '[:lower:]'
+}
+
+# Runs before any test: the writer tests create and delete restaurants in the database of the backend under test
+guardEnvironment()
+{
+	case $WF_ENV in
+		dev)
+			case "$(urlHost "$WF_BASE_URL")" in
+				localhost|127.*|::1) ;;
+				*)	echo "${red}WF_ENV is dev but WF_BASE_URL ($WF_BASE_URL) is not on localhost: refusing to run${end}"
+					echo "${red}(a dev run must never write to a deployed backend; unset WF_BASE_URL, or use WF_ENV=prod on purpose)${end}"
+					exit 2
+					;;
+			esac
+			;;
+		prod)
+			if [ "$WF_CONFIRM_PROD" == "yes" ]; then
+				return
+			fi
+			if [ ! -t 0 ]; then
+				echo "${red}WF_ENV is prod and no terminal is attached: set WF_CONFIRM_PROD=yes to run against production${end}"
+				exit 2
+			fi
+			local answer
+			echo "${red}PRODUCTION: the writer tests create and delete restaurants in the production database behind $WF_BASE_URL${end}"
+			echo "${cyn}Type ${end}${mag}prod${end}${cyn} to continue, anything else aborts : ${end}"
+			read -r answer
+			if [ "$answer" != "prod" ]; then
+				echo "${red}Production run not confirmed: aborted${end}"
+				exit 2
+			fi
+			;;
+	esac
 }
 
 inputPasswords()
@@ -376,13 +428,13 @@ keycloakClientProblem()
 {
 	case "$(echo "$KC_BODY" | jq -r '.error // empty' 2>/dev/null)" in
 		unauthorized_client)
-			RESULT_MESSAGE="client $WF_CLIENT_ID does not allow direct access grants: use the dedicated test client (see README)"
+			RESULT_MESSAGE="client $WF_CLIENT_ID does not allow direct access grants, or is disabled in Keycloak: use the dedicated test client and enable it for the run (see README)"
 			;;
 		invalid_client)
 			if [ -z "$WF_CLIENT_SECRET" ]; then
 				RESULT_MESSAGE="Keycloak rejected client $WF_CLIENT_ID: WF_CLIENT_SECRET is not set (see README)"
 			else
-				RESULT_MESSAGE="Keycloak rejected client $WF_CLIENT_ID: WF_CLIENT_SECRET is wrong, or the client does not exist (see README)"
+				RESULT_MESSAGE="Keycloak rejected client $WF_CLIENT_ID: WF_CLIENT_SECRET is wrong, or the client does not exist or is disabled in Keycloak (see README)"
 			fi
 			;;
 		*)	return 1
