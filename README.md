@@ -446,11 +446,12 @@ does and whether it passed, then a summary per area with pass/fail/skip counts a
 ./run-tests.sh --e2e            # JUnit tests, then the live end-to-end tests (asks for the environment)
 ./run-tests.sh --e2e-only       # only the live end-to-end tests (asks for the environment)
 ./run-tests.sh --env dev        # JUnit tests, then the live tests on a local backend (before deploying)
-./run-tests.sh --env prod       # JUnit tests, then the live tests on the Raspberry deployment
+./run-tests.sh --env prod       # JUnit tests, then the live tests on the Raspberry deployment (type "prod" to confirm)
 ```
 
 `--env` chooses the environment the live tests run against (it implies `--e2e`). Without it the script asks;
-without a terminal (CI, pipes) a run with no options runs the JUnit tests only, and `--e2e` targets `prod`.
+without a terminal (CI, pipes) a run with no options runs the JUnit tests only, and `--e2e` targets `dev`.
+`prod` asks you to type `prod` before any test runs (see below).
 
 | | `dev` | `test` | `prod` |
 |---|---|---|---|
@@ -495,7 +496,7 @@ the backend, MongoDB:
   writer logins work, and their tokens carry what the API checks (`iss`, the `windfire-restaurants-api` audience,
   the client role). When a claim is missing, the failure says what to fix in Keycloak.
 - **Authorization** - reader and writer can list, a reader cannot create, a user without API roles gets 403.
-  The Keycloak users are `windfire-reader` (reader), `windfire` (writer) and `windfire-norole` (no API role);
+  The Keycloak users are `windfire-reader` (reader), `windfire-writer` (writer) and `windfire-norole` (no API role);
   override them with `WF_READER_USER`, `WF_WRITER_USER` and `WF_NOROLE_USER`.
 - **MongoDB round trip** - a restaurant with every field filled is created, read back field by field and found in the
   list; a client-supplied `id` cannot overwrite it; an invalid body is rejected and not stored; a reader cannot delete
@@ -531,6 +532,32 @@ in realm `windfire` (it was a public client nothing used); it is made confidenti
 
 To use another client, set `WF_CLIENT_ID` (and `WF_CLIENT_SECRET` if it is confidential).
 
+- **Enabled only during a test run**: `windfire-restaurants` stays **disabled** in Keycloak (Enabled = Off) except while
+  an e2e run is in progress, dev or prod (both log in through it). While it is disabled, nobody can use the password
+  grant on it, even with the secret. Enable it just before a run and disable it right after:
+  - Admin console: *Clients → windfire-restaurants → Settings*, turn the **Enabled** switch on (or off), then *Save*.
+  - Command line, with `kcadm.sh` logged in to the realm's Keycloak:
+
+    ```
+    ID=$(kcadm.sh get clients -r windfire -q clientId=windfire-restaurants --fields id --format csv --noquotes)
+    kcadm.sh update clients/$ID -r windfire -s enabled=true    # before the run
+    kcadm.sh update clients/$ID -r windfire -s enabled=false   # after the run
+    ```
+
+  A run against the disabled client fails at the first login and the message says that the client may be disabled.
+
+**Test users.** The tests log in as three users of realm `windfire`. Each one has its client roles on
+`windfire-restaurants-api`. Pass their passwords as `WF_READER_PASSWORD`, `WF_WRITER_PASSWORD` and
+`WF_NOROLE_PASSWORD`, or type them when prompted:
+
+| User (variable to change it) | Client role on `windfire-restaurants-api` | Used for |
+|---|---|---|
+| `windfire-reader` (`WF_READER_USER`) | `restaurants-reader` | reading; checks that a reader cannot write |
+| `windfire-writer` (`WF_WRITER_USER`) | `restaurants-writer` | creating and deleting the `E2E-…` restaurants |
+| `windfire-norole` (`WF_NOROLE_USER`) | none | checks that a user without an API role gets 403 |
+
+`windfire-writer` exists only for the tests: the real `windfire` user is no longer used by them.
+
 Without credentials the Keycloak, authorization and MongoDB tests cannot run: they are reported as skipped and
 the summary warns that they were **not verified**. Add **`--strict`** to make them fail instead, so that a PASSED
 run really means everything was checked (recommended before a deployment):
@@ -542,7 +569,16 @@ run really means everything was checked (recommended before a deployment):
 **The writer tests create and then delete restaurants named `E2E-<timestamp>…` in the MongoDB database of the
 environment under test**; if a run is interrupted, whatever it created is deleted on exit. Dev and prod use
 [separate clusters](#data-persistence-with-mongodb): `--env dev` writes only to the dev cluster, while a prod run
-writes to (and cleans up in) the production data. Each run also makes
+writes to (and cleans up in) the production data. So the tests are safe by default:
+
+- **dev is the default** environment, in `run-tests.sh` (also without a terminal) and in `test/e2e-tests.sh`.
+- **prod must be chosen explicitly**, with `--env prod`, `WF_ENV=prod` or option 3 of the menu. Before any test runs,
+  you must then type `prod` to confirm. Without a terminal (CI, pipes) a prod run is refused unless
+  `WF_CONFIRM_PROD=yes` is set.
+- **a dev run never writes to a deployed backend**: if `WF_BASE_URL` does not point at localhost, the run stops with
+  an error before any test.
+
+Each run also makes
 one deliberate wrong-password login for the reader user, which Keycloak records as a failed login.
 
 Once the application is running, the [Swagger UI](#api-documentation-with-swagger-ui--openapi) at `/swagger-ui.html` can also be used to explore and call every endpoint interactively, supplying a Bearer token obtained from Keycloak via its "Authorize" button.
