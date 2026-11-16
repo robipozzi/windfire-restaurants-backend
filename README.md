@@ -8,6 +8,7 @@
 - [Run](#run)
     - [Stop the application](#stop-the-application)
 - [Deploy to Raspberry Pi](#deploy-to-raspberry-pi)
+    - [Logging](#logging)
 - [Continuous integration and dependency monitoring](#continuous-integration-and-dependency-monitoring)
 - [How the application works](#how-the-application-works)
     - [Layered architecture](#layered-architecture)
@@ -69,7 +70,7 @@ The application can be fully built, packaged and deployed to a Raspberry Pi (`ra
 6. Runs the Ansible playbook (with `-K`: sudo on `raspberry02` requires `pi`'s password, typed at the `BECOME password` prompt) **[deployment/raspberry/windfire-restaurants.yaml](deployment/raspberry/windfire-restaurants.yaml)**, which:
    - stops any previously running `windfire-restaurants-backend` systemd service;
    - copies the application jar, launch scripts, TLS certificate/key and the Windfire Keycloak Root CA certificate (`WindfireKeycloakRootCA.crt`, mode `0644`) to the Pi, and removes any legacy `keycloak.truststore.jks` left there;
-   - templates the environment file (Keycloak host/port, CORS origins, and the prod `MONGODB_HOST`/`MONGODB_USER` from `config.yml`) and a `windfire-restaurants-backend.service` systemd unit (**[templates/windfire-restaurants-backend.service.j2](deployment/raspberry/templates/windfire-restaurants-backend.service.j2)**, **[templates/windfire-restaurants-backend.env.j2](deployment/raspberry/templates/windfire-restaurants-backend.env.j2)**). The unit is sandboxed: the filesystem and `/home` are read-only except the application's `logs/` directory, `/tmp` and `/dev` are private, the service has no capabilities and cannot gain privileges, and only `AF_INET`/`AF_INET6`/`AF_UNIX` sockets are allowed. `MemoryDenyWriteExecute` is deliberately left out because the JVM's JIT compiler needs writable+executable memory;
+   - templates the environment file (Keycloak host/port, CORS origins, and the prod `MONGODB_HOST`/`MONGODB_USER` from `config.yml`) and a `windfire-restaurants-backend.service` systemd unit (**[templates/windfire-restaurants-backend.service.j2](deployment/raspberry/templates/windfire-restaurants-backend.service.j2)**, **[templates/windfire-restaurants-backend.env.j2](deployment/raspberry/templates/windfire-restaurants-backend.env.j2)**). The unit is sandboxed: the filesystem and `/home` are read-only except the application's `logs/` directory, `/tmp` and `/dev` are private, the service has no capabilities and cannot gain privileges, and only `AF_INET`/`AF_INET6`/`AF_UNIX` sockets are allowed. The env file also sets `LOGGING_FILE_NAME`, so the application writes and rotates its own log file, while the unit sends the console output to journald (see [Logging](#logging)). `MemoryDenyWriteExecute` is deliberately left out because the JVM's JIT compiler needs writable+executable memory;
    - encrypts the MongoDB password at rest on the Pi using `systemd-creds`, so it never sits in plaintext on disk, and wires it into the service via `LoadCredentialEncrypted`;
    - reloads `systemd`, starts and enables the service, and finally verifies the application is listening on port `8081`.
 
@@ -80,6 +81,12 @@ To remove the application from the Pi, run the companion uninstall playbook:
 ansible-playbook -K deployment/raspberry/windfire-restaurants-uninstall.yaml
 ```
 which stops and disables the systemd service, removes its unit file, and deletes the deployed application directory.
+
+### Logging
+- **Levels**: `com.rpozzi.windfire` logs at `info` by default (**[application.properties](src/main/resources/application.properties)**), so the Raspberry deployment, which runs with no Spring profile, does not log at debug. The `dev` profile (**[application-dev.properties](src/main/resources/application-dev.properties)**) switches it to `debug`.
+- **Log file on the Pi**: `~/windfire-restaurants/logs/windfire-restaurants-backend.log`, written by Spring Boot itself because the env file sets `LOGGING_FILE_NAME`. Spring Boot rotates it: a new file every 10 MB (`logging.logback.rollingpolicy.max-file-size`), archives gzipped in the same `logs/` directory, kept for 7 days (`max-history`) and capped at 100 MB in total (`total-size-cap`). The playbook makes `logs/` owned by the service user so the application can write there.
+- **Console output**: the systemd unit sends stdout/stderr to journald (`StandardOutput=journal`), which rotates on its own. Read it with `journalctl -u windfire-restaurants-backend` (add `-f` to follow).
+- **Local runs**: `logging.file.name` is not set, so Spring Boot writes no log file and logs to the console only.
 
 ## Continuous integration and dependency monitoring
 **[ci.yml](.github/workflows/ci.yml)** runs `./mvnw -B verify` on Java 17 for every pull request and every push to `main`. The badge at the top of this page shows the result for `main`; because the repository is private, it only renders for viewers who have access to it.
@@ -448,7 +455,7 @@ without a terminal (CI, pipes) a run with no options runs the JUnit tests only, 
 | | `dev` | `test` | `prod` |
 |---|---|---|---|
 | Backend | `https://localhost:8081`, `dev` profile, **started and stopped by the script** | not configured yet: live tests skipped (set `WF_BASE_URL` to test a server) | `https://raspberry02:8081` (deployed, no Spring profile) |
-| CORS origin tested | `https://localhost` | `WF_ALLOWED_ORIGIN` | `https://raspberry01:9443` |
+| CORS origin tested | `https://localhost` | `WF_ALLOWED_ORIGIN` | `https://raspberry01:8445` |
 | Swagger | API docs and Swagger UI must be public | must require a token | must require a token |
 
 On `dev`, if a backend already answers on `https://localhost:8081` it is used and left running. Otherwise the script
