@@ -39,6 +39,7 @@ main()
 {
 	parseArgs "$@"
 	resolveEnvironment $#
+	confirmProduction
 	preflight
 	printPlan
 	rm -rf "$RESULTS_DIR"
@@ -66,11 +67,13 @@ printHelp()
 	echo "  --e2e                   JUnit tests, then the live end-to-end tests (test/e2e-tests.sh)"
 	echo "  --e2e-only              only the live end-to-end tests"
 	echo "  --env <dev|test|prod>   environment the live tests run against (implies --e2e; asked for if not given,"
-	echo "                          prod without a terminal):"
+	echo "                          dev without a terminal):"
 	echo "                            dev  = local backend (localhost:$DEFAULT_APPLICATION_SERVER_PORT, dev profile, Swagger public), started in"
 	echo "                                   background and stopped at the end, unless one is already running"
 	echo "                            test = not configured yet: live tests skipped (set WF_BASE_URL to test a server)"
-	echo "                            prod = Raspberry deployment ($DEFAULT_APPLICATION_SERVER_HOST:$DEFAULT_APPLICATION_SERVER_PORT, no profile, Swagger private)"
+	echo "                            prod = Raspberry deployment ($DEFAULT_APPLICATION_SERVER_HOST:$DEFAULT_APPLICATION_SERVER_PORT, no profile, Swagger private);"
+	echo "                                   only when chosen explicitly, and after typing \"prod\" to confirm"
+	echo "                                   (without a terminal: WF_CONFIRM_PROD=yes)"
 	echo "  --no-start              dev: never start the backend, fail if none is running"
 	echo "  --keep-backend          dev: leave the backend started by this script running after the tests"
 	echo "  --strict                live tests that cannot run for missing credentials FAIL instead of SKIP"
@@ -87,6 +90,8 @@ printHelp()
 	echo "configured by WF_* environment variables, see the header of test/e2e-tests.sh. They log in with:"
 	echo "  WF_CLIENT_SECRET         secret of the windfire-restaurants Keycloak client (prompted if unset and a terminal is attached)"
 	echo "  WF_*_PASSWORD            passwords of the reader, writer and no-role users (prompted likewise)"
+	echo "  WF_CONFIRM_PROD=yes      run against prod without the typed confirmation (required without a terminal)"
+	echo "A dev run refuses a WF_BASE_URL that is not on localhost, so it can never write to the Raspberry deployment."
 	echo "The dev backend is started from $BACKEND_JAR (rebuilt if older than the sources) with:"
 	echo "  WF_MONGODB_PASSWORD      MongoDB dev password (prompted if unset and a terminal is attached)"
 	echo "  WF_KEYCLOAK_HOST/PORT    Keycloak the backend trusts ($DEFAULT_KEYCLOAK_HOST:$DEFAULT_KEYCLOAK_PORT)"
@@ -151,8 +156,30 @@ resolveEnvironment()
 	if [ -t 0 ]; then
 		selectEnvironment
 	else
-		TEST_ENV=prod
+		TEST_ENV=dev
 	fi
+}
+
+# Asked before the JUnit tests, not minutes later; test/e2e-tests.sh then does not ask again
+confirmProduction()
+{
+	if [ "$RUN_E2E" != "true" ] || [ "$TEST_ENV" != "prod" ] || [ "$WF_CONFIRM_PROD" == "yes" ]; then
+		return
+	fi
+	if [ ! -t 0 ]; then
+		echo "${red}Live tests on prod and no terminal is attached: set WF_CONFIRM_PROD=yes to run against production${end}"
+		exit 2
+	fi
+	local answer
+	echo "${red}PRODUCTION: the writer tests create and delete restaurants in the production database${end}"
+	echo "${red}behind ${WF_BASE_URL:-https://$DEFAULT_APPLICATION_SERVER_HOST:$DEFAULT_APPLICATION_SERVER_PORT}${end}"
+	echo "${cyn}Type ${end}${mag}prod${end}${cyn} to continue, anything else aborts : ${end}"
+	read -r answer
+	if [ "$answer" != "prod" ]; then
+		echo "${red}Production run not confirmed: aborted${end}"
+		exit 2
+	fi
+	export WF_CONFIRM_PROD=yes
 }
 
 selectEnvironment()
@@ -362,6 +389,11 @@ runE2ETests()
 	echo
 	echo "${grn}Running live end-to-end tests on the $TEST_ENV environment ...${end}"
 	WF_ENV=$TEST_ENV WF_STRICT=$STRICT WF_RESULTS_FILE="$PWD/$RESULTS_FILE" ./test/e2e-tests.sh
+	# 2 = the live tests refused to run (environment guard): never report the run as passed
+	if [ $? == 2 ]; then
+		echo "${red}The live tests did not run on $TEST_ENV (see above)${end}"
+		exit 2
+	fi
 }
 
 printSummary()
