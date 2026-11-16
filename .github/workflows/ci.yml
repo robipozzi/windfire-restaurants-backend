@@ -9,6 +9,11 @@ on:
     branches:
       - main
       - fix/dependabot-alerts
+  # Weekly, because new vulnerabilities are published without any change to the code.
+  # Cron times are UTC: Monday 06:30 UTC, after Dependabot's Monday 06:00 Europe/Rome run.
+  schedule:
+    - cron: '30 6 * * 1'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -24,7 +29,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Java
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin
           java-version: '17'
@@ -33,15 +38,77 @@ jobs:
       - name: Build and run tests
         run: ./mvnw --batch-mode --no-transfer-progress verify
 
-  dependency-review:
-    name: Dependency review
-    if: github.event_name == 'pull_request'
+  vulnerability-audit:
+    name: Vulnerability audit
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
     steps:
-      - name: Review dependency changes
-        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fail-on-severity: high
+          persist-credentials: false
+
+      # OSV-Scanner resolves the transitive dependency tree of pom.xml itself (Spring Boot
+      # parent included), so it does not depend on GitHub's dependency graph.
+      # It exits 1 on any finding and has no severity threshold, so this step is allowed
+      # to fail and the next step decides from the JSON report.
+      - name: Scan dependencies with OSV-Scanner
+        id: scan
+        uses: google/osv-scanner-action/osv-scanner-action@32d3cd482bdadfb38b186c0ad1b031902d55d932 # v2.7.1
+        continue-on-error: true
+        with:
+          scan-args: |-
+            --recursive
+            --all-packages
+            --format=json
+            --output-file=osv-results.json
+            ./
+
+      - name: Fail on high or critical findings
+        env:
+          SCAN_OUTCOME: ${{ steps.scan.outcome }}
+          REPORT: osv-results.json
+        run: |
+          set -euo pipefail
+
+          # A scan that fails writes no report: that is an error, not a clean result.
+          # --all-packages lists every scanned package, so an empty list means pom.xml was not scanned.
+          if [ ! -s "$REPORT" ] || ! jq -e '[.results[]?.packages[]?] | length > 0' "$REPORT" > /dev/null; then
+            echo "::error::OSV-Scanner produced no usable report (scan step outcome: $SCAN_OUTCOME)."
+            exit 1
+          fi
+
+          # Every finding, whatever its severity.
+          all=$(jq -r '.results[].packages[] | .package as $p | (.groups // [])[]
+            | "\($p.name) \($p.version): \(.ids | join(", ")) (CVSS \(if .max_severity == "" then "n/a" else .max_severity end))"' "$REPORT")
+
+          # Blocking findings: highest CVSS score of the group >= 7.0 (high or critical).
+          # Without a score, the advisory's own HIGH or CRITICAL rating.
+          blocking=$(jq -r '.results[].packages[]
+            | .package as $p | (.vulnerabilities // []) as $v
+            | (.groups // [])[] as $g
+            | (try ($g.max_severity | tonumber) catch null) as $score
+            | select(
+                ($score != null and $score >= 7.0)
+                or ($score == null and any($v[] | select(.id as $id | $g.ids | index($id));
+                       (.database_specific.severity // "" | ascii_upcase) | IN("HIGH", "CRITICAL")))
+              )
+            | "\($p.name) \($p.version): \($g.ids | join(", ")) (CVSS \(if $g.max_severity == "" then "n/a" else $g.max_severity end))"' "$REPORT")
+
+          if [ -z "$all" ]; then
+            echo "No known vulnerabilities in $(jq '[.results[].packages[]] | length' "$REPORT") scanned packages."
+            exit 0
+          fi
+
+          echo "All findings:"
+          echo "$all"
+
+          if [ -n "$blocking" ]; then
+            while IFS= read -r line; do
+              echo "::error::High or critical vulnerability: $line"
+            done <<< "$blocking"
+            exit 1
+          fi
+
+          echo "::warning::$(echo "$all" | wc -l | tr -d ' ') finding(s) below high severity, see the log of this step."
