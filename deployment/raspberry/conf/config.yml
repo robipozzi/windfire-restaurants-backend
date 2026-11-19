@@ -1,4 +1,4 @@
-# SSH/sudo user; also owns the shared truststore under its home folder
+# SSH/sudo user; stages the application under its home folder
 user: pi
 group: pi
 # System user and group the service runs as: no login shell, no supplementary groups (not in sudo)
@@ -8,7 +8,7 @@ remote_home_dir: /home/pi
 local_home_dir: /Users/robertopozzi
 remote_windfirerestaurants_dir: "{{ remote_home_dir }}/windfire-restaurants"
 remote_windfirerestaurants_run_target_dir: "{{ remote_windfirerestaurants_dir }}/target"
-# The service user's own copy of its TLS certificate, key and the Windfire Keycloak Root CA
+# The service user's own copy of its TLS certificate and key
 remote_windfirerestaurants_ssl_dir: "{{ remote_windfirerestaurants_dir }}/ssl"
 windfirerestaurants_port: 8081
 # Pi 3 cold start measured ~37 s to bind 8081 (2026-11-11); leave headroom for memory pressure
@@ -24,8 +24,10 @@ remote_windfirerestaurants_certs_dir: "{{ remote_home_dir }}/opt/windfire/ssl/ce
 remote_windfirerestaurants_keystore_dir: "{{ remote_home_dir }}/opt/windfire/ssl/keystore"
 remote_windfirerestaurants_certificate: "windfire-restaurants-backend.crt"
 remote_windfirerestaurants_key: "windfire-restaurants-backend.key"
-local_keycloak_truststore_dir: "{{ local_home_dir }}/opt/keycloak/ssl/truststore"
+# Old shared Keycloak truststore folder: only its legacy JVM-wide JKS is removed from there
 remote_keycloak_truststore_dir: "{{ remote_home_dir }}/opt/keycloak/ssl/truststore"
+# Shared, root-owned CA folder installed by windfire-raspberry (configure-windfire-infra.sh --tags windfire_ca): this playbook only checks it
+windfire_ca_dir: /etc/windfire/ca
 # Windfire Keycloak Root CA, trusted only by the "keycloak" SSL bundle (application.properties)
 keycloak_root_ca_certificate: "WindfireKeycloakRootCA.crt"
 cors_allowed_origins: "https://raspberry01:8445"

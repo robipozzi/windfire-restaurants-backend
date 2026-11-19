@@ -12,6 +12,38 @@
   vars_files:
     - "{{ src_dir }}/conf/config.yml"
   tasks:
+    ##########################################################
+    ##### Windfire Restaurants backend pre-flight section #####
+    ##########################################################
+    # Check the shared CA certificates before the running service is touched: windfire-raspberry
+    # (configure-windfire-infra.sh --tags windfire_ca) owns {{ windfire_ca_dir }}, this playbook never writes it.
+    # The service trusts the Windfire Keycloak Root CA (the Spring SSL bundle "keycloak", set in the env file).
+    - name: Check the shared CA folder {{ windfire_ca_dir }} and certificates
+      stat:
+        path: "{{ item }}"
+      loop:
+        - "{{ windfire_ca_dir }}"
+        - "{{ windfire_ca_dir }}/{{ keycloak_root_ca_certificate }}"
+      register: windfire_ca_stat
+    - name: Fail if the shared CA folder or a CA certificate is missing or writable by anyone but root
+      fail:
+        msg: >-
+          {{ item.item }} on {{ inventory_hostname }} is missing or not root:root
+          {{ '0755' if item.item == windfire_ca_dir else '0644' }}: run ./configure-windfire-infra.sh --tags windfire_ca in windfire-raspberry first
+      when: >-
+        not item.stat.exists
+        or item.stat.pw_name != 'root' or item.stat.gr_name != 'root'
+        or (item.item == windfire_ca_dir and (not item.stat.isdir or item.stat.mode != '0755'))
+        or (item.item != windfire_ca_dir and (not item.stat.isreg or item.stat.mode != '0644'))
+      loop: "{{ windfire_ca_stat.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+    - name: Check each CA certificate in {{ windfire_ca_dir }} is a valid certificate
+      command: "openssl x509 -noout -in {{ windfire_ca_dir }}/{{ item }}"
+      changed_when: false
+      check_mode: false
+      loop:
+        - "{{ keycloak_root_ca_certificate }}"
     ##############################################################
     ##### Windfire Restaurants backend stop application task #####
     ##############################################################
@@ -84,9 +116,11 @@
     ###################################################################
     ##### Windfire Restaurants TLS certificate deployment section #####
     ###################################################################
-    # The service user's own copy of the certificate, key and Windfire Keycloak Root CA, readable only by it
-    # (paths set in the env file). The shared folders under {{ remote_home_dir }}/opt are used by other
-    # Windfire repos and are left in place: only this application's old pi-owned certificate and key go.
+    # The service user's own copy of its certificate and key, readable only by it (paths set in the env file).
+    # The Windfire Keycloak Root CA is not copied: the service reads the shared, root-owned {{ windfire_ca_dir }}.
+    # The old shared folders under {{ remote_home_dir }}/opt are left in place: only this application's old pi-owned
+    # certificate and key go. The old CA copies there are removed by windfire-raspberry:
+    # ./configure-windfire-infra.sh --tags windfire_ca -e windfire_ca_remove_legacy=true
     - name: Remove this application's old certificate and key from the shared TLS folders
       file:
         path: "{{ item }}"
@@ -115,28 +149,12 @@
         owner: "{{ service_user }}"
         group: "{{ service_group }}"
         mode: "0400"
-    - name: Copy Windfire Keycloak Root CA "{{ keycloak_root_ca_certificate }}" to "{{ remote_windfirerestaurants_ssl_dir }}"
-      copy:
-        src: "{{ local_keycloak_truststore_dir }}/{{ keycloak_root_ca_certificate }}"
-        dest: "{{ remote_windfirerestaurants_ssl_dir }}/{{ keycloak_root_ca_certificate }}"
-        owner: "{{ service_user }}"
-        group: "{{ service_group }}"
-        mode: "0444"
-    #####################################################################
-    ##### Shared Keycloak Root CA truststore (other Windfire repos) #####
-    #####################################################################
-    # The service itself uses its own copy in {{ remote_windfirerestaurants_ssl_dir }}
-    - name: Ensure remote Keycloak truststore directory exists
+    # Older deploys gave the service its own copy of the Windfire Keycloak Root CA: it now reads the shared
+    # {{ windfire_ca_dir }}, and the folder is not recreated on deploy, so the old copy is removed here
+    - name: Remove the old per-service copy of the Windfire Keycloak Root CA from "{{ remote_windfirerestaurants_ssl_dir }}"
       file:
-        path: "{{ remote_keycloak_truststore_dir }}"
-        state: directory
-    - name: Copy Windfire Keycloak Root CA "{{ keycloak_root_ca_certificate }}" to remote server
-      copy:
-        src: "{{ local_keycloak_truststore_dir }}/{{ keycloak_root_ca_certificate }}"
-        dest: "{{ remote_keycloak_truststore_dir }}/{{ keycloak_root_ca_certificate }}"
-        owner: "{{ user }}"
-        group: "{{ group }}"
-        mode: "0644"
+        path: "{{ remote_windfirerestaurants_ssl_dir }}/{{ keycloak_root_ca_certificate }}"
+        state: absent
     - name: Remove legacy JVM-wide Keycloak truststore, replaced by the PEM SSL bundle
       file:
         path: "{{ remote_keycloak_truststore_dir }}/keycloak.truststore.jks"
