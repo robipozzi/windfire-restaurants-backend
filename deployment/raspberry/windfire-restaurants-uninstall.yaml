@@ -29,7 +29,8 @@
     ##### Windfire Restaurants backend un-deployment section #####
     ##############################################################
     # The whole folder (jar, env file, logs and the service user's TLS copy), so nothing is left
-    # owned by the uid of the service user removed below. The pi user and the shared truststores stay.
+    # owned by the uid of the service user removed below. The pi user and the shared CA certificates in
+    # /etc/windfire/ca (owned by windfire-raspberry) stay.
     - name: Remove "{{ remote_windfirerestaurants_dir }}" remote directory
       file:
         path: "{{ remote_windfirerestaurants_dir }}"

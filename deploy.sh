@@ -57,22 +57,6 @@ checkSSLCertificates()
     echo
 }
 
-checkKeycloakRootCA()
-{
-    echo ${blu}*******************************************${end}
-    echo ${blu}***** Check Windfire Keycloak Root CA *****${end}
-    echo ${blu}*******************************************${end}
-    echo
-    # Copied to the Pi and trusted only for Keycloak calls (spring.ssl.bundle.pem.keycloak)
-    if [ ! -f "$DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_ROOT_CA_CERTIFICATE" ]; then
-        echo ${red}Error: Windfire Keycloak Root CA not found: $DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_ROOT_CA_CERTIFICATE${end} >&2
-        echo ${yel}Create it with windfire-security/keycloak/security/setupTLS.sh${end} >&2
-        exit 1
-    fi
-    echo ${grn}Windfire Keycloak Root CA found in $DEFAULT_KEYCLOAK_TRUSTSTORE_DIR${end}
-    echo
-}
-
 inputKeycloakServer()
 {
 	echo ${cyn}Input Keycloak server host - leaving blank will set Keycloak server host to ${end}${mag}$DEFAULT_KEYCLOAK_HOST : ${end}
@@ -118,7 +102,6 @@ deployRaspberry()
 {
 	buildApplication
 	checkSSLCertificates
-	checkKeycloakRootCA
 	collectSecrets
 	# sudo on raspberry02 requires pi's password: -K asks for it (BECOME password)
 	if ansible-playbook -K deployment/raspberry/windfire-restaurants.yaml; then
