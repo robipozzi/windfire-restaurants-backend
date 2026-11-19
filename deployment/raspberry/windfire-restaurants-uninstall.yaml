@@ -28,7 +28,34 @@
     ##############################################################
     ##### Windfire Restaurants backend un-deployment section #####
     ##############################################################
+    # The whole folder (jar, env file, logs and the service user's TLS copy), so nothing is left
+    # owned by the uid of the service user removed below. The pi user and the shared truststores stay.
     - name: Remove "{{ remote_windfirerestaurants_dir }}" remote directory
       file:
-        path: "{{ remote_windfirerestaurants_run_target_dir }}"
+        path: "{{ remote_windfirerestaurants_dir }}"
+        state: absent
+    ##############################################################
+    ##### Windfire Restaurants backend service user section #####
+    ##############################################################
+    # Remove the ACL entry before the user, so no entry is left pointing at a deleted uid
+    - name: Check whether "{{ service_user }}" system user exists
+      ansible.builtin.getent:
+        database: passwd
+        key: "{{ service_user }}"
+        fail_key: false
+    - name: Remove "{{ service_user }}" traverse ACL entry from {{ remote_home_dir }}
+      ansible.posix.acl:
+        path: "{{ remote_home_dir }}"
+        entity: "{{ service_user }}"
+        etype: user
+        state: absent
+      when: (ansible_facts.getent_passwd | default({})).get(service_user)
+    - name: Remove "{{ service_user }}" system user
+      ansible.builtin.user:
+        name: "{{ service_user }}"
+        state: absent
+        remove: no
+    - name: Remove "{{ service_group }}" system group
+      ansible.builtin.group:
+        name: "{{ service_group }}"
         state: absent

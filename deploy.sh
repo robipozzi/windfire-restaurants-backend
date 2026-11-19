@@ -125,7 +125,8 @@ deployRaspberry()
 		echo ${grn}Windfire Restaurants backend deployed and listening on $DEFAULT_APPLICATION_SERVER_HOST:$DEFAULT_APPLICATION_SERVER_PORT${end}
 	else
 		echo ${red}Windfire Restaurants backend deployment FAILED${end} >&2
-		echo ${yel}Check ~/windfire-restaurants/logs/windfire-restaurants-backend.log on $DEFAULT_APPLICATION_SERVER_HOST${end} >&2
+		# The logs are owned by the windfire-restaurants service user, so pi needs sudo to read them
+		echo ${yel}Check \"sudo tail /home/pi/windfire-restaurants/logs/windfire-restaurants-backend.log\" or \"journalctl -u windfire-restaurants-backend\" on $DEFAULT_APPLICATION_SERVER_HOST${end} >&2
 		exit 1
 	fi
 }

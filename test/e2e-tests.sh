@@ -26,10 +26,10 @@
 #                          which has no direct access grants (see README, "Keycloak client for the e2e tests")
 #   WF_CLIENT_SECRET     secret of WF_CLIENT_ID, prompted if unset and a terminal is attached
 #   WF_API_CLIENT_ID     client whose roles the API checks (windfire-restaurants-api)
-#   WF_READER_USER       user with restaurants-reader      (windfire-reader)
-#   WF_READER_PASSWORD   prompted if unset and a terminal is attached
 #   WF_WRITER_USER       user with restaurants-writer      (windfire-writer)
 #   WF_WRITER_PASSWORD   prompted if unset and a terminal is attached
+#   WF_READER_USER       user with restaurants-reader      (windfire-reader)
+#   WF_READER_PASSWORD   prompted if unset and a terminal is attached
 #   WF_NOROLE_USER       user with NO API role             (windfire-norole)
 #   WF_NOROLE_PASSWORD   prompted if unset and a terminal is attached
 #   WF_ALLOWED_ORIGIN    an origin in CORS_ALLOWED_ORIGINS (prod: https://raspberry01:8445, dev: https://localhost)
@@ -70,15 +70,15 @@ WF_KEYCLOAK_CACERT=${WF_KEYCLOAK_CACERT:-$DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAU
 WF_REALM=${WF_REALM:-windfire}
 WF_CLIENT_ID=${WF_CLIENT_ID:-windfire-restaurants}
 WF_API_CLIENT_ID=${WF_API_CLIENT_ID:-windfire-restaurants-api}
-WF_READER_USER=${WF_READER_USER:-windfire-reader}
 WF_WRITER_USER=${WF_WRITER_USER:-windfire-writer}
+WF_READER_USER=${WF_READER_USER:-windfire-reader}
 WF_NOROLE_USER=${WF_NOROLE_USER:-windfire-norole}
 WF_ALLOWED_ORIGIN=${WF_ALLOWED_ORIGIN:-$DEFAULT_ALLOWED_ORIGIN}
 WF_STRICT=${WF_STRICT:-false}
 WF_RESULTS_FILE=${WF_RESULTS_FILE:-../target/test-results/results.tsv}
 AREA=
-READER_TOKEN=
 WRITER_TOKEN=
+READER_TOKEN=
 CREATED_ID=
 # Every restaurant this run stored and has not deleted yet: the EXIT trap removes them
 CREATED_IDS=
@@ -242,13 +242,13 @@ inputPasswords()
 		echo ${cyn}Input secret of Keycloak client ${end}${mag}$WF_CLIENT_ID${end}${cyn} : ${end}
 		read -s WF_CLIENT_SECRET
 	fi
-	if [ -z "$WF_READER_PASSWORD" ] && [ -t 0 ]; then
-		echo ${cyn}Input password of Keycloak reader user ${end}${mag}$WF_READER_USER${end}${cyn} : ${end}
-		read -s WF_READER_PASSWORD
-	fi
 	if [ -z "$WF_WRITER_PASSWORD" ] && [ -t 0 ]; then
 		echo ${cyn}Input password of Keycloak writer user ${end}${mag}$WF_WRITER_USER${end}${cyn} : ${end}
 		read -s WF_WRITER_PASSWORD
+	fi
+	if [ -z "$WF_READER_PASSWORD" ] && [ -t 0 ]; then
+		echo ${cyn}Input password of Keycloak reader user ${end}${mag}$WF_READER_USER${end}${cyn} : ${end}
+		read -s WF_READER_PASSWORD
 	fi
 	if [ -z "$WF_NOROLE_PASSWORD" ] && [ -t 0 ]; then
 		echo ${cyn}Input password of Keycloak user without roles ${end}${mag}$WF_NOROLE_USER${end}${cyn} : ${end}
