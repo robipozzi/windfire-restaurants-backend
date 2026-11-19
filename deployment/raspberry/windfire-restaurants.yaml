@@ -21,70 +21,111 @@
         state: stopped
       failed_when: false
       ignore_errors: yes
+    #############################################################
+    ##### Windfire Restaurants backend service user section #####
+    #############################################################
+    - name: Create "{{ service_group }}" system group
+      ansible.builtin.group:
+        name: "{{ service_group }}"
+        system: yes
+        state: present
+    - name: Create "{{ service_user }}" system user (no login shell, no supplementary groups)
+      ansible.builtin.user:
+        name: "{{ service_user }}"
+        group: "{{ service_group }}"
+        groups: ""
+        append: no
+        system: yes
+        shell: /usr/sbin/nologin
+        home: /nonexistent
+        create_home: no
+        state: present
+    # {{ remote_home_dir }} is 0700: let the service user traverse it (no read/list) to reach the application folder
+    - name: Allow "{{ service_user }}" to traverse {{ remote_home_dir }}
+      ansible.posix.acl:
+        path: "{{ remote_home_dir }}"
+        entity: "{{ service_user }}"
+        etype: user
+        permissions: x
+        state: present
     ###########################################################
     ##### Windfire Restaurants backend deployment section #####
     ###########################################################
-    - name: Remove "{{ remote_windfirerestaurants_dir }}" remote directory
+    - name: Remove "{{ remote_windfirerestaurants_run_target_dir }}" remote directory
       file:
         path: "{{ remote_windfirerestaurants_run_target_dir }}"
         state: absent
     - name: Ensure "{{ remote_windfirerestaurants_run_target_dir }}" remote directory exists
       file:
         path: "{{ remote_windfirerestaurants_run_target_dir }}"
-        state: directory 
+        state: directory
+        owner: "{{ service_user }}"
+        group: "{{ service_group }}"
     - name: Copy Windfire Restaurants backend application "{{ windfirerestaurants_app_jar }}" jar to remote server
       copy:
         src: "../../target/{{ windfirerestaurants_app_jar }}"
         dest: "{{ remote_windfirerestaurants_run_target_dir }}"
-        owner: "{{ user }}"
-        group: "{{ group }}"
+        owner: "{{ service_user }}"
+        group: "{{ service_group }}"
     - name: Copy "{{ windfirerestaurants_launch_script }}" launch script to remote server
       copy:
         src: "../../{{ windfirerestaurants_launch_script }}"
         dest: "{{ remote_windfirerestaurants_dir }}/{{ windfirerestaurants_launch_script }}"
-        owner: "{{ user }}"
-        group: "{{ group }}"
+        owner: "{{ service_user }}"
+        group: "{{ service_group }}"
         mode: "{{ mode }}"
     - name: Copy "{{ setenv_script }}" script to remote server
       copy:
         src: "../../{{ setenv_script }}"
         dest: "{{ remote_windfirerestaurants_dir }}/{{ setenv_script }}"
-        owner: "{{ user }}"
-        group: "{{ group }}"
+        owner: "{{ service_user }}"
+        group: "{{ service_group }}"
         mode: "{{ mode }}"
     ###################################################################
     ##### Windfire Restaurants TLS certificate deployment section #####
     ###################################################################
-    - name: Remove remote TLS directories
+    # The service user's own copy of the certificate, key and Windfire Keycloak Root CA, readable only by it
+    # (paths set in the env file). The shared folders under {{ remote_home_dir }}/opt are used by other
+    # Windfire repos and are left in place: only this application's old pi-owned certificate and key go.
+    - name: Remove this application's old certificate and key from the shared TLS folders
       file:
         path: "{{ item }}"
         state: absent
       loop:
-        - "{{ remote_windfirerestaurants_certs_dir }}"
-        - "{{ remote_windfirerestaurants_keystore_dir }}"
-    - name: Ensure remote TLS directories exist
+        - "{{ remote_windfirerestaurants_certs_dir }}/{{ remote_windfirerestaurants_certificate }}"
+        - "{{ remote_windfirerestaurants_keystore_dir }}/{{ remote_windfirerestaurants_key }}"
+    - name: Create "{{ remote_windfirerestaurants_ssl_dir }}" folder, accessible only by {{ service_user }}
       file:
-        path: "{{ item }}"
+        path: "{{ remote_windfirerestaurants_ssl_dir }}"
         state: directory
-      loop:
-        - "{{ remote_windfirerestaurants_certs_dir }}"
-        - "{{ remote_windfirerestaurants_keystore_dir }}"
+        owner: "{{ service_user }}"
+        group: "{{ service_group }}"
+        mode: "0500"
     - name: Copy Windfire Restaurants certificate "{{ remote_windfirerestaurants_certificate }}" to remote server
       copy:
         src: "{{ local_windfirerestaurants_certs_dir }}/{{ remote_windfirerestaurants_certificate }}"
-        dest: "{{ remote_windfirerestaurants_certs_dir }}/{{ remote_windfirerestaurants_certificate }}"
-        owner: "{{ user }}"
-        group: "{{ group }}"
+        dest: "{{ remote_windfirerestaurants_ssl_dir }}/{{ remote_windfirerestaurants_certificate }}"
+        owner: "{{ service_user }}"
+        group: "{{ service_group }}"
+        mode: "0444"
     - name: Copy Windfire Restaurants private key "{{ remote_windfirerestaurants_key }}" to remote server
       copy:
         src: "{{ local_windfirerestaurants_keystore_dir }}/{{ remote_windfirerestaurants_key }}"
-        dest: "{{ remote_windfirerestaurants_keystore_dir }}/{{ remote_windfirerestaurants_key }}"
-        owner: "{{ user }}"
-        group: "{{ group }}"
-        mode: "0600"
-    ###########################################################
-    ##### Keycloak Root CA certificate deployment section #####
-    ###########################################################
+        dest: "{{ remote_windfirerestaurants_ssl_dir }}/{{ remote_windfirerestaurants_key }}"
+        owner: "{{ service_user }}"
+        group: "{{ service_group }}"
+        mode: "0400"
+    - name: Copy Windfire Keycloak Root CA "{{ keycloak_root_ca_certificate }}" to "{{ remote_windfirerestaurants_ssl_dir }}"
+      copy:
+        src: "{{ local_keycloak_truststore_dir }}/{{ keycloak_root_ca_certificate }}"
+        dest: "{{ remote_windfirerestaurants_ssl_dir }}/{{ keycloak_root_ca_certificate }}"
+        owner: "{{ service_user }}"
+        group: "{{ service_group }}"
+        mode: "0444"
+    #####################################################################
+    ##### Shared Keycloak Root CA truststore (other Windfire repos) #####
+    #####################################################################
+    # The service itself uses its own copy in {{ remote_windfirerestaurants_ssl_dir }}
     - name: Ensure remote Keycloak truststore directory exists
       file:
         path: "{{ remote_keycloak_truststore_dir }}"
@@ -109,17 +150,33 @@
       file:
         path: "{{ remote_windfirerestaurants_dir }}/logs"
         state: directory
-        owner: "{{ user }}"
-        group: "{{ group }}"
+        owner: "{{ service_user }}"
+        group: "{{ service_group }}"
         mode: "0750"
         recurse: yes
     - name: Template Windfire Restaurants backend environment file
       template:
         src: "{{ src_dir }}/templates/windfire-restaurants-backend.env.j2"
         dest: "{{ remote_windfirerestaurants_dir }}/windfire-restaurants-backend.env"
-        owner: "{{ user }}"
-        group: "{{ group }}"
+        owner: "{{ service_user }}"
+        group: "{{ service_group }}"
         mode: "0600"
+    # Hand the application folder over to the service user (owner/group only: file modes are kept),
+    # including files left owned by pi or root by earlier deployments
+    - name: Change owner of "{{ remote_windfirerestaurants_dir }}" and its contents to {{ service_user }}
+      file:
+        path: "{{ remote_windfirerestaurants_dir }}"
+        state: directory
+        recurse: yes
+        owner: "{{ service_user }}"
+        group: "{{ service_group }}"
+    - name: Make "{{ remote_windfirerestaurants_ssl_dir }}" accessible only by {{ service_user }}
+      file:
+        path: "{{ remote_windfirerestaurants_ssl_dir }}"
+        state: directory
+        owner: "{{ service_user }}"
+        group: "{{ service_group }}"
+        mode: "0500"
     ####################################################################
     ##### Windfire Restaurants backend secrets (systemd-creds) section #####
     ####################################################################
