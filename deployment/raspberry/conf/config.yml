@@ -26,7 +26,7 @@ remote_windfirerestaurants_certificate: "windfire-restaurants-backend.crt"
 remote_windfirerestaurants_key: "windfire-restaurants-backend.key"
 # Old shared Keycloak truststore folder: only its legacy JVM-wide JKS is removed from there
 remote_keycloak_truststore_dir: "{{ remote_home_dir }}/opt/keycloak/ssl/truststore"
-# Shared, root-owned CA folder installed by windfire-raspberry (deploy-windfire-ca.sh): this playbook only checks it
+# Shared, root-owned CA folder installed by windfire-raspberry (configure-windfire-infra.sh --tags windfire_ca): this playbook only checks it
 windfire_ca_dir: /etc/windfire/ca
 # Windfire Keycloak Root CA, trusted only by the "keycloak" SSL bundle (application.properties)
 keycloak_root_ca_certificate: "WindfireKeycloakRootCA.crt"

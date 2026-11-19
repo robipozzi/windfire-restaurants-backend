@@ -67,7 +67,7 @@ The application can be fully built, packaged and deployed to a Raspberry Pi (`ra
 3. Generates the TLS server certificate/key for the `raspberry` environment if not already present, via **[ssl/generate-ssl-cert.sh](ssl/generate-ssl-cert.sh)**.
 4. Prompts once for the Keycloak host/port and the MongoDB **prod** password (user `windfire-prod-app`), and exports them as environment variables.
 5. Runs the Ansible playbook (with `-K`: sudo on `raspberry02` requires `pi`'s password, typed at the `BECOME password` prompt) **[deployment/raspberry/windfire-restaurants.yaml](deployment/raspberry/windfire-restaurants.yaml)**, which:
-   - checks that `/etc/windfire/ca` is `root:root 0755` and holds `WindfireKeycloakRootCA.crt` as a valid `root:root 0644` certificate, and stops before touching the running service otherwise. That shared folder is installed by `deploy-windfire-ca.sh` in [windfire-raspberry](https://github.com/robipozzi/windfire-raspberry) from `~/opt/keycloak/ssl/truststore`: run it first. This playbook never copies a CA certificate;
+   - checks that `/etc/windfire/ca` is `root:root 0755` and holds `WindfireKeycloakRootCA.crt` as a valid `root:root 0644` certificate, and stops before touching the running service otherwise. That shared folder is installed by `./configure-windfire-infra.sh --tags windfire_ca` in [windfire-raspberry](https://github.com/robipozzi/windfire-raspberry) from `~/opt/keycloak/ssl/truststore`: run it first. This playbook never copies a CA certificate;
    - stops any previously running `windfire-restaurants-backend` systemd service;
    - creates the `windfire-restaurants` system user and group the service runs as, instead of `pi`. The user has no login shell (`/usr/sbin/nologin`), no home directory and no supplementary groups, so it is not in `sudo`. `/home/pi` is `0700`, so the playbook adds a traverse-only ACL (`u:windfire-restaurants:--x`) on it to let the service user reach its application folder;
    - copies the application jar and launch scripts to `/home/pi/windfire-restaurants`, then makes the whole folder owned by `windfire-restaurants` (so the scripts there can no longer be run as `pi`);
@@ -452,7 +452,7 @@ created by `windfire-security/keycloak/security/setupTLS.sh`.
 When Keycloak's CA changes, replace the file and restart the application. When
 [deployed to Raspberry Pi](#deploy-to-raspberry-pi), the env file points the `keycloak` bundle
 (`SPRING_SSL_BUNDLE_PEM_KEYCLOAK_TRUSTSTORE_CERTIFICATE`) at the shared, root-owned
-`/etc/windfire/ca/WindfireKeycloakRootCA.crt`, installed on every Pi by `deploy-windfire-ca.sh` in
+`/etc/windfire/ca/WindfireKeycloakRootCA.crt`, installed on every Pi by `./configure-windfire-infra.sh --tags windfire_ca` in
 [windfire-raspberry](https://github.com/robipozzi/windfire-raspberry): to rotate the CA there, run that script, then
 redeploy (or restart) the application. The playbook stops early if the file is missing or not `root:root 0644`.
 

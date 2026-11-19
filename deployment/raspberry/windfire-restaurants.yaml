@@ -16,7 +16,7 @@
     ##### Windfire Restaurants backend pre-flight section #####
     ##########################################################
     # Check the shared CA certificates before the running service is touched: windfire-raspberry
-    # (deploy-windfire-ca.sh) owns {{ windfire_ca_dir }}, this playbook never writes it.
+    # (configure-windfire-infra.sh --tags windfire_ca) owns {{ windfire_ca_dir }}, this playbook never writes it.
     # The service trusts the Windfire Keycloak Root CA (the Spring SSL bundle "keycloak", set in the env file).
     - name: Check the shared CA folder {{ windfire_ca_dir }} and certificates
       stat:
@@ -29,7 +29,7 @@
       fail:
         msg: >-
           {{ item.item }} on {{ inventory_hostname }} is missing or not root:root
-          {{ '0755' if item.item == windfire_ca_dir else '0644' }}: run deploy-windfire-ca.sh in windfire-raspberry first
+          {{ '0755' if item.item == windfire_ca_dir else '0644' }}: run ./configure-windfire-infra.sh --tags windfire_ca in windfire-raspberry first
       when: >-
         not item.stat.exists
         or item.stat.pw_name != 'root' or item.stat.gr_name != 'root'
@@ -119,7 +119,8 @@
     # The service user's own copy of its certificate and key, readable only by it (paths set in the env file).
     # The Windfire Keycloak Root CA is not copied: the service reads the shared, root-owned {{ windfire_ca_dir }}.
     # The old shared folders under {{ remote_home_dir }}/opt are left in place: only this application's old pi-owned
-    # certificate and key go (windfire-raspberry's deploy-windfire-ca.sh --remove-legacy removes the old CA copies).
+    # certificate and key go. The old CA copies there are removed by windfire-raspberry:
+    # ./configure-windfire-infra.sh --tags windfire_ca -e windfire_ca_remove_legacy=true
     - name: Remove this application's old certificate and key from the shared TLS folders
       file:
         path: "{{ item }}"
