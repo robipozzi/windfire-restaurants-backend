@@ -4,7 +4,8 @@ After=network.target
 
 [Service]
 Type=simple
-User={{ user }}
+User={{ service_user }}
+Group={{ service_group }}
 WorkingDirectory={{ remote_windfirerestaurants_dir }}
 EnvironmentFile={{ remote_windfirerestaurants_dir }}/windfire-restaurants-backend.env
 LoadCredentialEncrypted=windfire-restaurants-backend-secrets:/etc/credstore.encrypted/windfire-restaurants-backend-secrets
@@ -17,6 +18,8 @@ StandardOutput=journal
 StandardError=journal
 # Sandboxing. ProtectSystem=strict and ProtectHome=read-only make the whole filesystem
 # read-only; ReadWritePaths re-opens only the logs dir, the one place the service writes.
+# ProtectHome stays read-only, not yes: the application folder is under {{ remote_home_dir }}
+# (the service user reaches it through a traverse-only ACL on {{ remote_home_dir }}).
 NoNewPrivileges=yes
 PrivateTmp=yes
 PrivateDevices=yes
