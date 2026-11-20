@@ -42,6 +42,7 @@ main()
 	confirmProduction
 	preflight
 	printPlan
+	remindService
 	rm -rf "$RESULTS_DIR"
 	mkdir -p "$RESULTS_DIR"
 	if [ "$RUN_JUNIT" == "true" ]; then
@@ -252,6 +253,18 @@ printPlan()
 			prod)  echo "${blu}    Backend: ${WF_BASE_URL:-Raspberry deployment https://$DEFAULT_APPLICATION_SERVER_HOST:$DEFAULT_APPLICATION_SERVER_PORT}${end}" ;;
 		esac
 	fi
+}
+
+# Pauses until Enter is pressed; skipped without a terminal (CI, pipes) so unattended runs never hang
+remindService()
+{
+	if [ ! -t 0 ]; then
+		return
+	fi
+	echo
+	echo "${red}REMINDER: enable the windfire-restaurants service before running the test suite${end}"
+	echo "${cyn}Press Enter to continue, Ctrl-C to abort ...${end}"
+	read -r
 }
 
 # The backend answers (any HTTP status: a 503 DOWN is still a started backend, testHealth reports why)
