@@ -72,7 +72,7 @@ The application can be fully built, packaged and deployed to a Raspberry Pi (`ra
    - creates the `windfire-restaurants` system user and group the service runs as, instead of `pi`. The user has no login shell (`/usr/sbin/nologin`), no home directory and no supplementary groups, so it is not in `sudo`. `/home/pi` is `0700`, so the playbook adds a traverse-only ACL (`u:windfire-restaurants:--x`) on it to let the service user reach its application folder;
    - copies the application jar and launch scripts to `/home/pi/windfire-restaurants`, then makes the whole folder owned by `windfire-restaurants` (so the scripts there can no longer be run as `pi`);
    - gives the service its own copy of the TLS certificate (`0444`) and private key (`0400`) in `/home/pi/windfire-restaurants/ssl` (`0500`, owned by `windfire-restaurants`), and points Spring Boot at them through the env file (`SERVER_SSL_CERTIFICATE`, `SERVER_SSL_CERTIFICATEPRIVATEKEY`). The `keycloak` SSL bundle (`SPRING_SSL_BUNDLE_PEM_KEYCLOAK_TRUSTSTORE_CERTIFICATE`) points at the shared `/etc/windfire/ca/WindfireKeycloakRootCA.crt`, and the old per-service copy of that CA is removed from `ssl/`. It removes this application's old certificate and key from the shared `/home/pi/opt/windfire/ssl/{certs,keystore}` folders, and any legacy `keycloak.truststore.jks` from `/home/pi/opt/keycloak/ssl/truststore`;
-   - templates the environment file (Keycloak host/port, CORS origins, and the prod `MONGODB_HOST`/`MONGODB_USER` from `config.yml`) and a `windfire-restaurants-backend.service` systemd unit (**[templates/windfire-restaurants-backend.service.j2](deployment/raspberry/templates/windfire-restaurants-backend.service.j2)**, **[templates/windfire-restaurants-backend.env.j2](deployment/raspberry/templates/windfire-restaurants-backend.env.j2)**). The unit runs as `User=windfire-restaurants` / `Group=windfire-restaurants` and is sandboxed: the filesystem and `/home` are read-only except the application's `logs/` directory (`ProtectHome` is `read-only`, not `yes`, because the application folder is under `/home/pi`), `/tmp` and `/dev` are private, the service has no capabilities and cannot gain privileges, and only `AF_INET`/`AF_INET6`/`AF_UNIX` sockets are allowed. The env file also sets `LOGGING_FILE_NAME`, so the application writes and rotates its own log file, while the unit sends the console output to journald (see [Logging](#logging)). `MemoryDenyWriteExecute` is deliberately left out because the JVM's JIT compiler needs writable+executable memory;
+   - templates the environment file (Keycloak host/port, the expected issuer `KEYCLOAK_ISSUER_URL` from `keycloak_issuer_url`, the CORS origins from the `cors_allowed_origins` list, joined with commas, and the prod `MONGODB_HOST`/`MONGODB_USER` from `config.yml`) and a `windfire-restaurants-backend.service` systemd unit (**[templates/windfire-restaurants-backend.service.j2](deployment/raspberry/templates/windfire-restaurants-backend.service.j2)**, **[templates/windfire-restaurants-backend.env.j2](deployment/raspberry/templates/windfire-restaurants-backend.env.j2)**). The unit runs as `User=windfire-restaurants` / `Group=windfire-restaurants` and is sandboxed: the filesystem and `/home` are read-only except the application's `logs/` directory (`ProtectHome` is `read-only`, not `yes`, because the application folder is under `/home/pi`), `/tmp` and `/dev` are private, the service has no capabilities and cannot gain privileges, and only `AF_INET`/`AF_INET6`/`AF_UNIX` sockets are allowed. The env file also sets `LOGGING_FILE_NAME`, so the application writes and rotates its own log file, while the unit sends the console output to journald (see [Logging](#logging)). `MemoryDenyWriteExecute` is deliberately left out because the JVM's JIT compiler needs writable+executable memory;
    - encrypts the MongoDB password at rest on the Pi using `systemd-creds`, so it never sits in plaintext on disk, and wires it into the service via `LoadCredentialEncrypted`;
    - reloads `systemd`, starts and enables the service, and finally verifies the application is listening on port `8081`.
 
@@ -322,12 +322,17 @@ Keycloak provides user federation, strong authentication, user management, fine-
 
 To setup, configure and run a Keycloak server as an OAuth2 Authorization Server refer to the following article *[Building robust APIs: a comprehensive guide to OAuth2 and TLS integration in REST services — Part 2](https://medium.com/@robertopozzi/building-robust-apis-a-comprehensive-guide-to-oauth2-and-ssl-integration-in-rest-services-part-2-44213d2e3e62)*.
 
-Once Keycloak is up and running, **spring.security.oauth2.resourceserver.jwt.issuer-uri** property needs to be set appropriately in **[application.properties](src/main/resources/application.properties)**, as follows:
+Once Keycloak is up and running, the **spring.security.oauth2.resourceserver.jwt.issuer-uri** and **jwk-set-uri** properties in **[application.properties](src/main/resources/application.properties)** point the application at it:
 
 ```
 ### Security configuration
-spring.security.oauth2.resourceserver.jwt.issuer-uri=https://${KEYCLOAK_SERVER}:${KEYCLOAK_SERVER_PORT}/realms/windfire
+spring.security.oauth2.resourceserver.jwt.issuer-uri=${KEYCLOAK_ISSUER_URL:https://${KEYCLOAK_SERVER}:${KEYCLOAK_SERVER_PORT}/realms/windfire}
+spring.security.oauth2.resourceserver.jwt.jwk-set-uri=https://${KEYCLOAK_SERVER}:${KEYCLOAK_SERVER_PORT}/realms/windfire/protocol/openid-connect/certs
 ```
+
+The signing keys are always fetched from the LAN JWKS endpoint, with no OIDC discovery. The issuer is only compared
+with the token `iss` claim and is never contacted, so it can be Keycloak's public hostname: set `KEYCLOAK_ISSUER_URL`
+(`keycloak_issuer_url` in [config.yml](deployment/raspberry/conf/config.yml) when deployed). By default it is the LAN issuer.
 
 Access control is centralized in **[SecurityConfig](src/main/java/com/rpozzi/windfire/security/SecurityConfig.java)**: it whitelists the Swagger UI/OpenAPI paths and requires an authenticated (JWT Bearer) request for everything else.
 
@@ -426,7 +431,7 @@ certificate. Keycloak is HTTPS-only, serving `https://raspberry01:8443` with a c
 dedicated **Windfire Keycloak Root CA** (set up by
 [windfire-security/keycloak/security/setupTLS.sh](https://github.com/robipozzi/windfire-security/blob/main/keycloak/security/setupTLS.sh),
 independent of the Windfire Root CA used for this application's own certificate), so the application also
-needs *outbound* trust: when it fetches Keycloak's OIDC metadata and JWKS to validate incoming JWTs, it has
+needs *outbound* trust: when it fetches Keycloak's JWKS to validate incoming JWTs, it has
 to trust the Windfire Keycloak Root CA.
 
 This trust is scoped to Keycloak only, via a Spring Boot PEM SSL bundle named `keycloak`, declared in
@@ -438,7 +443,7 @@ spring.ssl.bundle.pem.keycloak.truststore.certificate=file:${HOME_DIR}/opt/keycl
 
 The `JwtDecoder` bean in **[SecurityConfig.java](src/main/java/com/rpozzi/windfire/security/SecurityConfig.java)**
 builds its `RestTemplate` with `RestTemplateBuilder.sslBundle(...)` on that bundle and passes it to
-`NimbusJwtDecoder.withIssuerLocation(...)`, so both the OIDC discovery call and the JWKS fetch trust the
+`NimbusJwtDecoder.withJwkSetUri(...)`, so the JWKS fetch trusts the
 Windfire Keycloak Root CA. Nothing else uses the bundle: the JVM default trust (the JDK `cacerts`) is left
 untouched, so MongoDB Atlas, whose certificate is signed by a public CA, and any other outbound TLS
 connection keep working as before. **[MongoTlsTrustTest](src/test/java/com/rpozzi/windfire/config/MongoTlsTrustTest.java)**
@@ -458,9 +463,9 @@ redeploy (or restart) the application. The playbook stops early if the file is m
 
 **Keycloak hostname:** Keycloak's server certificate only has `raspberry01` as Subject Alternative Name, so
 the Keycloak host given to the run/deploy scripts (`KEYCLOAK_SERVER`) must be exactly `raspberry01`, not an
-IP address or another name. It must also match the issuer Keycloak advertises
-(`https://raspberry01:8443/realms/windfire`), since Spring checks the token `iss` claim against
-`spring.security.oauth2.resourceserver.jwt.issuer-uri`.
+IP address or another name. The issuer Keycloak advertises (by default `https://raspberry01:8443/realms/windfire`)
+must match `spring.security.oauth2.resourceserver.jwt.issuer-uri`, since Spring checks the token `iss` claim against it.
+If Keycloak advertises a public hostname, set `KEYCLOAK_ISSUER_URL` to that issuer. The JWKS is still fetched from `raspberry01`.
 
 ### Test the application
 **[run-tests.sh](run-tests.sh)** runs the whole test suite. For every test it prints what the test is, what it

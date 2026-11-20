@@ -1,6 +1,5 @@
 package com.rpozzi.windfire.security;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -28,6 +27,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestOperations;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -46,10 +46,13 @@ public class SecurityConfig {
 	private String apiClientId;
 	@Value("${windfire.swagger.public:false}")
 	private boolean swaggerPublic;
+	// A comma-separated value is split and trimmed by Spring
 	@Value("${windfire.cors.allowed-origins}")
-	private String allowedOrigins;
+	private List<String> allowedOrigins;
 	@Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
 	private String issuerUri;
+	@Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
+	private String jwkSetUri;
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -93,16 +96,25 @@ public class SecurityConfig {
 	}
 
 	/**
-	 * OIDC discovery and JWKS calls to Keycloak trust only the "keycloak" SSL bundle (Windfire Keycloak Root CA);
+	 * JWKS calls to Keycloak trust only the "keycloak" SSL bundle (Windfire Keycloak Root CA);
 	 * the rest of the JVM (MongoDB Atlas included) keeps the default trust.
 	 */
 	@Bean
 	JwtDecoder jwtDecoder(RestTemplateBuilder restTemplateBuilder, SslBundles sslBundles) {
 		RestTemplate keycloakRestTemplate = restTemplateBuilder.sslBundle(sslBundles.getBundle(KEYCLOAK_SSL_BUNDLE)).build();
-		NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withIssuerLocation(issuerUri)
-				.restOperations(keycloakRestTemplate)
+		return jwtDecoder(jwkSetUri, keycloakRestTemplate, issuerUri, apiClientId);
+	}
+
+	/**
+	 * Keys come from the LAN JWKS endpoint, with no OIDC discovery, so the issuer may be a public hostname this
+	 * host never contacts. withJwkSetUri alone checks only timestamps: the validator set here is the sole issuer
+	 * check, and it runs together with the audience check.
+	 */
+	static NimbusJwtDecoder jwtDecoder(String jwkSetUri, RestOperations restOperations, String issuer, String clientId) {
+		NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri)
+				.restOperations(restOperations)
 				.build();
-		jwtDecoder.setJwtValidator(jwtValidator(issuerUri, apiClientId));
+		jwtDecoder.setJwtValidator(jwtValidator(issuer, clientId));
 		return jwtDecoder;
 	}
 
@@ -118,10 +130,7 @@ public class SecurityConfig {
 	@Bean
 	CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration configuration = new CorsConfiguration();
-		configuration.setAllowedOrigins(Arrays.stream(StringUtils.commaDelimitedListToStringArray(allowedOrigins))
-				.map(String::trim)
-				.filter(StringUtils::hasText)
-				.toList());
+		configuration.setAllowedOrigins(allowedOrigins.stream().filter(StringUtils::hasText).toList());
 		configuration.setAllowedMethods(List.of("GET", "POST", "DELETE", "OPTIONS"));
 		configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
 		configuration.setAllowCredentials(false);
