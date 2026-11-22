@@ -104,7 +104,7 @@ deployRaspberry()
 	checkSSLCertificates
 	collectSecrets
 	# sudo on raspberry02 requires pi's password: -K asks for it (BECOME password)
-	if ansible-playbook -K deployment/raspberry/windfire-restaurants.yaml; then
+	if runWithAnsibleSshKey ansible-playbook -K deployment/raspberry/windfire-restaurants.yaml; then
 		echo ${grn}Windfire Restaurants backend deployed and listening on $DEFAULT_APPLICATION_SERVER_HOST:$DEFAULT_APPLICATION_SERVER_PORT${end}
 	else
 		echo ${red}Windfire Restaurants backend deployment FAILED${end} >&2
