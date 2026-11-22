@@ -61,6 +61,8 @@ The application can be fully built, packaged and deployed to a Raspberry Pi (`ra
 ./deploy.sh
 ```
 
+If `ansible_rsa` has a passphrase, every script here that runs Ansible loads it into a private `ssh-agent` through `runWithAnsibleSshKey` in [setenv.sh](setenv.sh). On macOS it uses Apple's `/usr/bin/ssh-add --apple-use-keychain`, so the passphrase is asked on the first run, saved in your login Keychain and read from there afterwards. Elsewhere it is asked on every run.
+
 **[deploy.sh](deploy.sh)** orchestrates the whole chain:
 1. Prompts for the target platform (currently only `1. Raspberry` is available).
 2. Builds the application from source (`./build.sh 4`, i.e. `mvn clean install`).
