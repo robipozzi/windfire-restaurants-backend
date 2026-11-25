@@ -328,13 +328,14 @@ Once Keycloak is up and running, the **spring.security.oauth2.resourceserver.jwt
 
 ```
 ### Security configuration
-spring.security.oauth2.resourceserver.jwt.issuer-uri=${KEYCLOAK_ISSUER_URL:https://${KEYCLOAK_SERVER}:${KEYCLOAK_SERVER_PORT}/realms/windfire}
+spring.security.oauth2.resourceserver.jwt.issuer-uri=${KEYCLOAK_ISSUER_URL:https://${KEYCLOAK_SERVER}:${KEYCLOAK_SERVER_PORT}}/realms/windfire
 spring.security.oauth2.resourceserver.jwt.jwk-set-uri=https://${KEYCLOAK_SERVER}:${KEYCLOAK_SERVER_PORT}/realms/windfire/protocol/openid-connect/certs
 ```
 
 The signing keys are always fetched from the LAN JWKS endpoint, with no OIDC discovery. The issuer is only compared
-with the token `iss` claim and is never contacted, so it can be Keycloak's public hostname: set `KEYCLOAK_ISSUER_URL`
-(`keycloak_issuer_url` in [config.yml](deployment/raspberry/conf/config.yml) when deployed). By default it is the LAN issuer.
+with the token `iss` claim and is never contacted, so it can be Keycloak's public hostname: set `KEYCLOAK_ISSUER_URL` to Keycloak's base URL as it appears in tokens,
+without `/realms/windfire` (e.g. `https://auth.windfire.cc`, the same value as the auth server's `KEYCLOAK_ISSUER_URL`;
+`keycloak_issuer_url` in [config.yml](deployment/raspberry/conf/config.yml) when deployed). By default it is the LAN address.
 
 Access control is centralized in **[SecurityConfig](src/main/java/com/rpozzi/windfire/security/SecurityConfig.java)**: it whitelists the Swagger UI/OpenAPI paths and requires an authenticated (JWT Bearer) request for everything else.
 
@@ -467,7 +468,7 @@ redeploy (or restart) the application. The playbook stops early if the file is m
 the Keycloak host given to the run/deploy scripts (`KEYCLOAK_SERVER`) must be exactly `raspberry01`, not an
 IP address or another name. The issuer Keycloak advertises (by default `https://raspberry01:8443/realms/windfire`)
 must match `spring.security.oauth2.resourceserver.jwt.issuer-uri`, since Spring checks the token `iss` claim against it.
-If Keycloak advertises a public hostname, set `KEYCLOAK_ISSUER_URL` to that issuer. The JWKS is still fetched from `raspberry01`.
+If Keycloak advertises a public hostname, set `KEYCLOAK_ISSUER_URL` to that base URL (without `/realms/windfire`). The JWKS is still fetched from `raspberry01`.
 
 ### Test the application
 **[run-tests.sh](run-tests.sh)** runs the whole test suite. For every test it prints what the test is, what it
@@ -500,6 +501,8 @@ starts it in background with the same settings as
 interrupted), stops **only the process it started**. Its settings:
 - `WF_MONGODB_PASSWORD` - MongoDB dev password, prompted if unset and a terminal is attached
 - `WF_KEYCLOAK_HOST` / `WF_KEYCLOAK_PORT` - Keycloak the backend trusts (default `raspberry01:8443`)
+- `WF_KEYCLOAK_ISSUER_URL` - Keycloak base URL in the token `iss`, without `/realms/windfire` (default `https://WF_KEYCLOAK_HOST:WF_KEYCLOAK_PORT`;
+  `https://auth.windfire.cc` once Keycloak has its public hostname). It sets the dev backend's `KEYCLOAK_ISSUER_URL` and the issuer the e2e tests expect
 - `WF_BACKEND_START_TIMEOUT` - seconds to wait for it to answer (default 120)
 - `--no-start` never starts it (fails if none is running); `--keep-backend` leaves it running after the tests.
 
