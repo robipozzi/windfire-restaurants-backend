@@ -49,7 +49,7 @@ Once requirements are met, one can build and run the application with the follow
 
 A convenient script **[build.sh](build.sh)** is provided to build the application from source code.
 
-Another script **[start-windfire-restaurants-backend.sh](start-windfire-restaurants-backend.sh)** is provided to run the application, once it has been built. It interactively prompts for the Keycloak server host/port, the allowed CORS origins (default `https://localhost`) and the MongoDB **dev** password (user `windfire-dev-app`), exports them as environment variables consumed by **[application.properties](src/main/resources/application.properties)**, and starts the JVM in the background. It stops early if the Windfire Keycloak Root CA certificate is missing, see [Keycloak client trust (outbound TLS)](#keycloak-client-trust-outbound-tls).
+Another script **[start-windfire-restaurants-backend.sh](start-windfire-restaurants-backend.sh)** is provided to run the application, once it has been built. It interactively prompts for the Keycloak server host/port, the realm `KEYCLOAK_REALM` (default `windfire-dev`, the development realm created by windfire-security's `keycloak/deployment/create-dev-realm.sh`, whose login stays on the LAN so a local UI can sign in), the expected token issuer `KEYCLOAK_ISSUER_URL` (default `https://<Keycloak host>:<port>` for `windfire-dev`, `https://auth.windfire.cc` for `windfire`, whose tokens carry the public hostname even when Keycloak is reached on `raspberry01:8443`), the allowed CORS origins (default `https://localhost,https://localhost:3000`, the local UI served by `./start.sh` and by the Vite dev server) and the MongoDB **dev** password (user `windfire-dev-app`), exports them as environment variables consumed by **[application.properties](src/main/resources/application.properties)**, and starts the JVM in the background. It stops early if the Windfire Keycloak Root CA certificate is missing, see [Keycloak client trust (outbound TLS)](#keycloak-client-trust-outbound-tls).
 
 ### Stop the application
 **[stop-windfire-restaurants-backend.sh](stop-windfire-restaurants-backend.sh)** looks up the running `windfire-restaurants-backend` process, sends it a graceful `kill`, waits up to 10 seconds for it to shut down, and force-kills it (`kill -9`) if it hasn't stopped by then.
@@ -328,14 +328,15 @@ Once Keycloak is up and running, the **spring.security.oauth2.resourceserver.jwt
 
 ```
 ### Security configuration
-spring.security.oauth2.resourceserver.jwt.issuer-uri=${KEYCLOAK_ISSUER_URL:https://${KEYCLOAK_SERVER}:${KEYCLOAK_SERVER_PORT}}/realms/windfire
-spring.security.oauth2.resourceserver.jwt.jwk-set-uri=https://${KEYCLOAK_SERVER}:${KEYCLOAK_SERVER_PORT}/realms/windfire/protocol/openid-connect/certs
+spring.security.oauth2.resourceserver.jwt.issuer-uri=${KEYCLOAK_ISSUER_URL:https://${KEYCLOAK_SERVER}:${KEYCLOAK_SERVER_PORT}}/realms/${KEYCLOAK_REALM:windfire}
+spring.security.oauth2.resourceserver.jwt.jwk-set-uri=https://${KEYCLOAK_SERVER}:${KEYCLOAK_SERVER_PORT}/realms/${KEYCLOAK_REALM:windfire}/protocol/openid-connect/certs
 ```
 
 The signing keys are always fetched from the LAN JWKS endpoint, with no OIDC discovery. The issuer is only compared
 with the token `iss` claim and is never contacted, so it can be Keycloak's public hostname: set `KEYCLOAK_ISSUER_URL` to Keycloak's base URL as it appears in tokens,
 without `/realms/windfire` (e.g. `https://auth.windfire.cc`, the same value as the auth server's `KEYCLOAK_ISSUER_URL`;
 `keycloak_issuer_url` in [config.yml](deployment/raspberry/conf/config.yml) when deployed). By default it is the LAN address.
+`KEYCLOAK_REALM` (default `windfire`) selects the realm of both URLs: the local start script uses `windfire-dev`, whose login and issuer stay on the LAN (`https://raspberry01:8443/realms/windfire-dev`).
 
 Access control is centralized in **[SecurityConfig](src/main/java/com/rpozzi/windfire/security/SecurityConfig.java)**: it whitelists the Swagger UI/OpenAPI paths and requires an authenticated (JWT Bearer) request for everything else.
 

@@ -27,6 +27,10 @@ main()
 	inputKeycloakServerPort
 	export KEYCLOAK_SERVER=$KEYCLOAK_HOST
 	export KEYCLOAK_SERVER_PORT=$KEYCLOAK_PORT
+	inputKeycloakRealm
+	export KEYCLOAK_REALM=$KEYCLOAK_REALM
+	inputKeycloakIssuerUrl
+	export KEYCLOAK_ISSUER_URL=$KEYCLOAK_ISSUER_URL
 	inputCorsAllowedOrigins
 	export CORS_ALLOWED_ORIGINS=$CORS_ALLOWED_ORIGINS
 	export HOME_DIR=$HOME
@@ -51,6 +55,30 @@ inputKeycloakServerPort()
 	read KEYCLOAK_PORT
 	if [ "$KEYCLOAK_PORT" == "" ]; then
 		KEYCLOAK_PORT=$DEFAULT_KEYCLOAK_PORT
+    fi
+}
+
+inputKeycloakRealm()
+{
+	echo ${cyn}Input Keycloak realm - leaving blank will set it to ${end}${mag}$DEFAULT_KEYCLOAK_REALM : ${end}
+	read KEYCLOAK_REALM
+	if [ "$KEYCLOAK_REALM" == "" ]; then
+		KEYCLOAK_REALM=$DEFAULT_KEYCLOAK_REALM
+    fi
+}
+
+# Expected token iss without /realms/<realm>: the LAN URL for windfire-dev (Frontend URL pinned to it), Keycloak's
+# public hostname for windfire. A wrong value makes the backend reject every token with 401.
+inputKeycloakIssuerUrl()
+{
+	local default_issuer_url=https://$KEYCLOAK_HOST:$KEYCLOAK_PORT
+	if [ "$KEYCLOAK_REALM" == "windfire" ]; then
+		default_issuer_url=$PUBLIC_KEYCLOAK_ISSUER_URL
+	fi
+	echo ${cyn}Input Keycloak issuer URL \(token iss without /realms/$KEYCLOAK_REALM\) - leaving blank will set it to ${end}${mag}$default_issuer_url : ${end}
+	read KEYCLOAK_ISSUER_URL
+	if [ "$KEYCLOAK_ISSUER_URL" == "" ]; then
+		KEYCLOAK_ISSUER_URL=$default_issuer_url
     fi
 }
 
