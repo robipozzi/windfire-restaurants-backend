@@ -27,6 +27,8 @@ main()
 	inputKeycloakServerPort
 	export KEYCLOAK_SERVER=$KEYCLOAK_HOST
 	export KEYCLOAK_SERVER_PORT=$KEYCLOAK_PORT
+	inputKeycloakRealm
+	export KEYCLOAK_REALM=$KEYCLOAK_REALM
 	inputKeycloakIssuerUrl
 	export KEYCLOAK_ISSUER_URL=$KEYCLOAK_ISSUER_URL
 	inputCorsAllowedOrigins
@@ -56,14 +58,27 @@ inputKeycloakServerPort()
     fi
 }
 
-# Expected token iss without /realms/windfire. Keycloak puts its public hostname there (hostname=, cloudflared), not the
-# host:port the backend fetches the JWKS from: without it every token is rejected with 401.
+inputKeycloakRealm()
+{
+	echo ${cyn}Input Keycloak realm - leaving blank will set it to ${end}${mag}$DEFAULT_KEYCLOAK_REALM : ${end}
+	read KEYCLOAK_REALM
+	if [ "$KEYCLOAK_REALM" == "" ]; then
+		KEYCLOAK_REALM=$DEFAULT_KEYCLOAK_REALM
+    fi
+}
+
+# Expected token iss without /realms/<realm>: the LAN URL for windfire-dev (Frontend URL pinned to it), Keycloak's
+# public hostname for windfire. A wrong value makes the backend reject every token with 401.
 inputKeycloakIssuerUrl()
 {
-	echo ${cyn}Input Keycloak issuer URL \(token iss without /realms/windfire\) - leaving blank will set it to ${end}${mag}$DEFAULT_KEYCLOAK_ISSUER_URL : ${end}
+	local default_issuer_url=https://$KEYCLOAK_HOST:$KEYCLOAK_PORT
+	if [ "$KEYCLOAK_REALM" == "windfire" ]; then
+		default_issuer_url=$PUBLIC_KEYCLOAK_ISSUER_URL
+	fi
+	echo ${cyn}Input Keycloak issuer URL \(token iss without /realms/$KEYCLOAK_REALM\) - leaving blank will set it to ${end}${mag}$default_issuer_url : ${end}
 	read KEYCLOAK_ISSUER_URL
 	if [ "$KEYCLOAK_ISSUER_URL" == "" ]; then
-		KEYCLOAK_ISSUER_URL=$DEFAULT_KEYCLOAK_ISSUER_URL
+		KEYCLOAK_ISSUER_URL=$default_issuer_url
     fi
 }
 
