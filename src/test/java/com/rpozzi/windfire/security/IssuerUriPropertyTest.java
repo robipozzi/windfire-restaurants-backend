@@ -45,4 +45,14 @@ class IssuerUriPropertyTest {
 		StandardEnvironment env = environment(Map.of("KEYCLOAK_SERVER", "raspberry01", "KEYCLOAK_SERVER_PORT", "8443"));
 		assertEquals("https://raspberry01:8443/realms/windfire", env.getProperty(ISSUER_URI));
 	}
+
+	@Test
+	@Does("KEYCLOAK_REALM=windfire-dev → issuer and JWKS on raspberry01 for realm windfire-dev")
+	@DisplayName("KEYCLOAK_REALM selects the realm of the issuer and of the JWKS")
+	void devRealm() throws Exception {
+		StandardEnvironment env = environment(Map.of("KEYCLOAK_SERVER", "raspberry01", "KEYCLOAK_SERVER_PORT", "8443",
+				"KEYCLOAK_REALM", "windfire-dev"));
+		assertEquals("https://raspberry01:8443/realms/windfire-dev", env.getProperty(ISSUER_URI));
+		assertEquals("https://raspberry01:8443/realms/windfire-dev/protocol/openid-connect/certs", env.getProperty(JWK_SET_URI));
+	}
 }
