@@ -24,7 +24,7 @@ DEFAULT_KEYCLOAK_PORT=8443
 KEYCLOAK_HOST=
 KEYCLOAK_PORT=
 KEYCLOAK_TLS_SERVER_PORT=8443
-# Realm of the local backend: windfire-dev (windfire-security keycloak/deployment/create-dev-realm.sh), whose login and
+# Realm of the local backend: windfire-dev (on raspberry01, Frontend URL pinned to the LAN), whose login and
 # token issuer stay on the LAN, so a local UI can log in; windfire is the production realm
 DEFAULT_KEYCLOAK_REALM=windfire-dev
 KEYCLOAK_REALM=
