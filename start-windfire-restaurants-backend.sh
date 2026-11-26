@@ -27,6 +27,8 @@ main()
 	inputKeycloakServerPort
 	export KEYCLOAK_SERVER=$KEYCLOAK_HOST
 	export KEYCLOAK_SERVER_PORT=$KEYCLOAK_PORT
+	inputKeycloakIssuerUrl
+	export KEYCLOAK_ISSUER_URL=$KEYCLOAK_ISSUER_URL
 	inputCorsAllowedOrigins
 	export CORS_ALLOWED_ORIGINS=$CORS_ALLOWED_ORIGINS
 	export HOME_DIR=$HOME
@@ -51,6 +53,17 @@ inputKeycloakServerPort()
 	read KEYCLOAK_PORT
 	if [ "$KEYCLOAK_PORT" == "" ]; then
 		KEYCLOAK_PORT=$DEFAULT_KEYCLOAK_PORT
+    fi
+}
+
+# Expected token iss without /realms/windfire. Keycloak puts its public hostname there (hostname=, cloudflared), not the
+# host:port the backend fetches the JWKS from: without it every token is rejected with 401.
+inputKeycloakIssuerUrl()
+{
+	echo ${cyn}Input Keycloak issuer URL \(token iss without /realms/windfire\) - leaving blank will set it to ${end}${mag}$DEFAULT_KEYCLOAK_ISSUER_URL : ${end}
+	read KEYCLOAK_ISSUER_URL
+	if [ "$KEYCLOAK_ISSUER_URL" == "" ]; then
+		KEYCLOAK_ISSUER_URL=$DEFAULT_KEYCLOAK_ISSUER_URL
     fi
 }
 

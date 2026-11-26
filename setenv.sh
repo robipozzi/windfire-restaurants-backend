@@ -24,6 +24,10 @@ DEFAULT_KEYCLOAK_PORT=8443
 KEYCLOAK_HOST=
 KEYCLOAK_PORT=
 KEYCLOAK_TLS_SERVER_PORT=8443
+# Keycloak base URL as it appears in the token iss (without /realms/windfire): Keycloak's public hostname,
+# same value as keycloak_issuer_url in deployment/raspberry/conf/config.yml and the auth server's KEYCLOAK_ISSUER_URL
+DEFAULT_KEYCLOAK_ISSUER_URL=https://auth.windfire.cc
+KEYCLOAK_ISSUER_URL=
 ## -- Keycloak configurations - END
 ## == Application server configurations - START
 DEFAULT_APPLICATION_SERVER_HOST=raspberry02
@@ -32,8 +36,9 @@ APPLICATION_SERVER_HOST=
 APPLICATION_SERVER_PORT=
 ## == Application server configurations - END
 ## -- CORS configurations - START
-# Comma-separated list of exact origins allowed to call the API (local windfire-ui-react served by ./start.sh)
-DEFAULT_CORS_ALLOWED_ORIGINS=https://localhost
+# Comma-separated list of exact origins allowed to call the API: local windfire-ui-react served by ./start.sh (https://localhost)
+# and by the Vite dev server (./start.sh --dev, https://localhost:3000)
+DEFAULT_CORS_ALLOWED_ORIGINS=https://localhost,https://localhost:3000
 CORS_ALLOWED_ORIGINS=
 ## -- CORS configurations - END
 
