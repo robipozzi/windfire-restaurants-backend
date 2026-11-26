@@ -61,6 +61,7 @@ import com.rpozzi.windfire.testsupport.Does;
 @ContextConfiguration(classes = { RestaurantRESTService.class, RestExceptionHandler.class, SecurityConfig.class,
 		CustomAuthenticationEntryPoint.class })
 @TestPropertySource(properties = { "spring.security.oauth2.resourceserver.jwt.issuer-uri=" + SecurityConfigTest.ISSUER,
+		"spring.security.oauth2.resourceserver.jwt.jwk-set-uri=" + SecurityConfigTest.ISSUER + "/protocol/openid-connect/certs",
 		"windfire.cors.allowed-origins=https://allowed.example, https://other.example",
 		// Pin the secure value (also the application.properties default) so PublicSwagger can flip it
 		"windfire.swagger.public=false" })

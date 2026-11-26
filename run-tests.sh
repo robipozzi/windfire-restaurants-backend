@@ -96,6 +96,7 @@ printHelp()
 	echo "The dev backend is started from $BACKEND_JAR (rebuilt if older than the sources) with:"
 	echo "  WF_MONGODB_PASSWORD      MongoDB dev password (prompted if unset and a terminal is attached)"
 	echo "  WF_KEYCLOAK_HOST/PORT    Keycloak the backend trusts ($DEFAULT_KEYCLOAK_HOST:$DEFAULT_KEYCLOAK_PORT)"
+	echo "  WF_KEYCLOAK_ISSUER_URL   Keycloak base URL in the token iss, e.g. https://auth.windfire.cc (https://WF_KEYCLOAK_HOST:PORT)"
 	echo "  WF_BACKEND_START_TIMEOUT seconds to wait for it to answer (120); its output goes to $BACKEND_LOG"
 	echo
 	echo "Exit code: 0 all passed, 1 some test failed, 2 the tests could not run (missing tool, build error)."
@@ -322,6 +323,7 @@ startBackend()
 	echo "${grn}Starting the backend in background (dev profile, log: $BACKEND_LOG) ...${end}"
 	KEYCLOAK_SERVER=${WF_KEYCLOAK_HOST:-$DEFAULT_KEYCLOAK_HOST} \
 	KEYCLOAK_SERVER_PORT=${WF_KEYCLOAK_PORT:-$DEFAULT_KEYCLOAK_PORT} \
+	KEYCLOAK_ISSUER_URL=${WF_KEYCLOAK_ISSUER_URL:-https://${WF_KEYCLOAK_HOST:-$DEFAULT_KEYCLOAK_HOST}:${WF_KEYCLOAK_PORT:-$DEFAULT_KEYCLOAK_PORT}} \
 	CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-$DEFAULT_CORS_ALLOWED_ORIGINS} \
 	HOME_DIR=$HOME \
 	MONGODB_PASSWORD=$mongodb_password \
