@@ -29,7 +29,7 @@ KEYCLOAK_TLS_SERVER_PORT=8443
 DEFAULT_KEYCLOAK_REALM=windfire-dev
 KEYCLOAK_REALM=
 # Keycloak base URL as it appears in the token iss (without /realms/<realm>). windfire-dev: the LAN URL
-# https://<Keycloak host>:<port>. windfire: Keycloak's public hostname below, same value as keycloak_issuer_url in
+# https://<Keycloak host>:<port>. windfire: Keycloak's public hostname below, same value as keycloak_public_issuer_url in
 # deployment/raspberry/conf/config.yml and the auth server's KEYCLOAK_ISSUER_URL
 PUBLIC_KEYCLOAK_ISSUER_URL=https://auth.windfire.cc
 KEYCLOAK_ISSUER_URL=
