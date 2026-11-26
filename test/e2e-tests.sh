@@ -18,6 +18,7 @@
 #                          with WF_ENV=dev it must point at localhost: a dev run never writes to the Raspberry
 #   WF_CACERT            Windfire Root CA for the backend  ($DEFAULT_ROOT_CA_TRUSTSTORE_DIR/$DEFAULT_ROOT_CA_CERTIFICATE)
 #   WF_KEYCLOAK_URL      Keycloak base URL                 (https://raspberry01:8443)
+#   WF_KEYCLOAK_ISSUER_URL Keycloak base URL in the token iss ($WF_KEYCLOAK_URL; e.g. https://auth.windfire.cc)
 #   WF_KEYCLOAK_CACERT   Keycloak Root CA                  ($DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_ROOT_CA_CERTIFICATE)
 #   WF_REALM             Keycloak realm                    (windfire)
 #   WF_CLIENT_ID         Keycloak client used for login    (windfire-restaurants)
@@ -66,6 +67,7 @@ esac
 WF_BASE_URL=${WF_BASE_URL:-$DEFAULT_BASE_URL}
 WF_CACERT=${WF_CACERT:-$DEFAULT_ROOT_CA_TRUSTSTORE_DIR/$DEFAULT_ROOT_CA_CERTIFICATE}
 WF_KEYCLOAK_URL=${WF_KEYCLOAK_URL:-https://$DEFAULT_KEYCLOAK_HOST:$DEFAULT_KEYCLOAK_PORT}
+WF_KEYCLOAK_ISSUER_URL=${WF_KEYCLOAK_ISSUER_URL:-$WF_KEYCLOAK_URL}
 WF_KEYCLOAK_CACERT=${WF_KEYCLOAK_CACERT:-$DEFAULT_KEYCLOAK_TRUSTSTORE_DIR/$DEFAULT_KEYCLOAK_ROOT_CA_CERTIFICATE}
 WF_REALM=${WF_REALM:-windfire}
 WF_CLIENT_ID=${WF_CLIENT_ID:-windfire-restaurants}
@@ -136,7 +138,7 @@ main()
 	runTest "Keycloak issues a reader token" \
 		"POST $WF_KEYCLOAK_URL/realms/$WF_REALM/protocol/openid-connect/token as $WF_READER_USER → 200 with access_token" testReaderLogin
 	runTest "Reader token carries what the API needs" \
-		"Decode the reader token → iss = $WF_KEYCLOAK_URL/realms/$WF_REALM, aud contains $WF_API_CLIENT_ID, role restaurants-reader on $WF_API_CLIENT_ID" testReaderClaims
+		"Decode the reader token → iss = $WF_KEYCLOAK_ISSUER_URL/realms/$WF_REALM, aud contains $WF_API_CLIENT_ID, role restaurants-reader on $WF_API_CLIENT_ID" testReaderClaims
 	runTest "Keycloak issues a writer token" \
 		"POST the token endpoint as $WF_WRITER_USER → 200 with access_token" testWriterLogin
 	runTest "Writer token carries what the API needs" \
@@ -470,7 +472,7 @@ checkClaims()
 {
 	local claims expected_iss
 	claims=$(jwtPayload "$1")
-	expected_iss="$WF_KEYCLOAK_URL/realms/$WF_REALM"
+	expected_iss="$WF_KEYCLOAK_ISSUER_URL/realms/$WF_REALM"
 	if [ "$(echo "$claims" | jq -r .iss)" != "$expected_iss" ]; then
 		RESULT_MESSAGE="iss is '$(echo "$claims" | jq -r .iss)', not '$expected_iss' (the backend's issuer-uri must match it)"
 		return 1
